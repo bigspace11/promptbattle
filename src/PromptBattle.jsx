@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const RED = "#eb1d25";
 const BLACK = "#0a0a0a";
 const WHITE = "#ffffff";
 const GREY = "#888888";
-const DARKGREY = "#1a1a1a";
 
 const CHALLENGES = {
   beginner: [
@@ -79,11 +78,8 @@ const RedBar = () => (
 );
 
 const Logo = () => (
-  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-    <div style={{ width: "28px", height: "28px", background: RED, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <span style={{ color: WHITE, fontSize: "14px", fontWeight: "900", fontFamily: "'Anton', sans-serif" }}>B</span>
-    </div>
-    <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "16px", letterSpacing: "0.1em", color: WHITE }}>BIGSPACE<span style={{ color: RED }}>AI</span></span>
+  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+    <img src="https://raw.githubusercontent.com/bigspace11/promptbattle/main/public/logo.png" alt="BigSpaceAI" style={{ height: "32px", width: "auto" }} />
   </div>
 );
 
@@ -94,10 +90,10 @@ function ScoreBar({ label, value, delay = 0 }) {
     return () => clearTimeout(t);
   }, [value, delay]);
   return (
-    <div style={{ marginBottom: "16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "13px", letterSpacing: "0.12em", color: GREY }}>{label}</span>
-        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "14px", color: value >= 20 ? RED : value >= 15 ? WHITE : GREY }}>{value}/25</span>
+    <div style={{ marginBottom: "18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "14px", letterSpacing: "0.08em", color: "#aaa" }}>{label}</span>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "15px", color: value >= 20 ? RED : value >= 15 ? WHITE : GREY }}>{value}/25</span>
       </div>
       <div style={{ background: "#1f1f1f", height: "6px" }}>
         <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s cubic-bezier(0.22, 1, 0.36, 1)" }} />
@@ -133,7 +129,7 @@ export default function PromptBattle() {
       const r = await judgePrompt(challenge, userPrompt, level);
       setResults(r);
       setScreen("results");
-    } catch (e) {
+    } catch {
       setError("Connection failed. Try again.");
       setScreen("challenge");
     }
@@ -197,7 +193,7 @@ export default function PromptBattle() {
               <span style={{ fontSize: "22px" }}>{cfg.emoji}</span>
               <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "22px", letterSpacing: "0.1em", color: WHITE }}>{cfg.label}</span>
             </div>
-            <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY }}>{cfg.desc} · Pass mark: {cfg.passMark}/100</div>
+            <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>{cfg.desc} · Pass mark: {cfg.passMark}/100</div>
           </div>
           <span style={{ color: RED, fontSize: "24px", fontFamily: "'Anton', sans-serif" }}>→</span>
         </button>
@@ -211,14 +207,14 @@ export default function PromptBattle() {
       <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
         <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "32px" }}>
           <span style={{ background: RED, fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.15em", color: WHITE, padding: "4px 12px" }}>{cfg.emoji} {cfg.label}</span>
-          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY, letterSpacing: "0.08em", textTransform: "uppercase" }}>{challenge.title}</span>
+          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, letterSpacing: "0.08em", textTransform: "uppercase" }}>{challenge.title}</span>
         </div>
         <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.2em", color: RED, marginBottom: "16px" }}>YOUR CHALLENGE</div>
           <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", lineHeight: "1.75", color: WHITE, marginBottom: "24px", fontWeight: "500" }}>{challenge.scenario}</p>
           <div style={{ background: "#111", borderLeft: `3px solid ${RED}`, padding: "14px 18px" }}>
             <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "10px", letterSpacing: "0.2em", color: RED, marginBottom: "6px" }}>HINT</div>
-            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, lineHeight: "1.6" }}>{challenge.hint}</p>
+            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY, lineHeight: "1.7" }}>{challenge.hint}</p>
           </div>
         </div>
         <div style={{ border: "1px solid #222", padding: "28px", marginBottom: "20px" }}>
@@ -254,7 +250,7 @@ export default function PromptBattle() {
         <div style={{ borderTop: `4px solid ${RED}`, background: "#0d0d0d", padding: "40px", marginBottom: "16px", textAlign: "center" }}>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.25em", color: GREY, marginBottom: "16px" }}>YOUR SCORE</div>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "clamp(80px, 20vw, 120px)", lineHeight: "1", color: passed ? RED : WHITE, marginBottom: "8px" }}>{results.total}</div>
-          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, marginBottom: "20px" }}>out of 100 · Pass mark: {cfg.passMark}</div>
+          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY, marginBottom: "20px" }}>out of 100 · Pass mark: {cfg.passMark}</div>
           <span style={{ background: passed ? RED : "#1a1a1a", border: `1px solid ${passed ? RED : "#333"}`, fontFamily: "'Anton', sans-serif", fontSize: "14px", letterSpacing: "0.15em", color: WHITE, padding: "8px 20px" }}>{results.grade.toUpperCase()}</span>
         </div>
         <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
@@ -266,27 +262,31 @@ export default function PromptBattle() {
         </div>
         <div style={{ border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.2em", color: RED, marginBottom: "16px" }}>EXPERT FEEDBACK</div>
-          <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "16px", lineHeight: "1.8", color: "#ccc", marginBottom: "28px" }}>{results.verdict}</p>
+          <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", lineHeight: "1.9", color: "#e0e0e0", marginBottom: "28px", fontWeight: "500" }}>{results.verdict}</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
             <div>
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>✓ STRENGTHS</div>
-              {results.strengths.map((s, i) => (<div key={i} style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, lineHeight: "1.6", marginBottom: "8px", paddingLeft: "12px", borderLeft: `2px solid ${RED}` }}>{s}</div>))}
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "14px" }}>✓ STRENGTHS</div>
+              {results.strengths.map((s, i) => (
+                <div key={i} style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: "#bbb", lineHeight: "1.7", marginBottom: "10px", paddingLeft: "12px", borderLeft: `2px solid ${RED}` }}>{s}</div>
+              ))}
             </div>
             <div>
-              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>↑ TO IMPROVE</div>
-              {results.improvements.map((s, i) => (<div key={i} style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, lineHeight: "1.6", marginBottom: "8px", paddingLeft: "12px", borderLeft: "2px solid #333" }}>{s}</div>))}
+              <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "14px" }}>↑ TO IMPROVE</div>
+              {results.improvements.map((s, i) => (
+                <div key={i} style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: "#bbb", lineHeight: "1.7", marginBottom: "10px", paddingLeft: "12px", borderLeft: "2px solid #333" }}>{s}</div>
+              ))}
             </div>
           </div>
           <div style={{ background: "#111", borderLeft: `3px solid ${RED}`, padding: "16px 20px" }}>
-            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "10px", letterSpacing: "0.2em", color: RED, marginBottom: "6px" }}>⚡ PRO TIP</div>
-            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: "#aaa", lineHeight: "1.6" }}>{results.proTip}</p>
+            <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "10px", letterSpacing: "0.2em", color: RED, marginBottom: "8px" }}>⚡ PRO TIP</div>
+            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "16px", color: "#bbb", lineHeight: "1.7" }}>{results.proTip}</p>
           </div>
         </div>
         <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
           <div style={{ fontSize: "48px", marginBottom: "12px" }}>{passed ? cfg.emoji : "💪"}</div>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.25em", color: passed ? RED : GREY, marginBottom: "8px" }}>{passed ? "ACHIEVEMENT UNLOCKED" : "KEEP PRACTISING"}</div>
           <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "28px", letterSpacing: "0.08em", color: passed ? WHITE : "#444", marginBottom: "8px" }}>{passed ? cfg.badge : "NOT YET..."}</div>
-          {passed && <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY }}>BigSpaceAI Certified · {new Date().toLocaleDateString("en-SG", { month: "short", year: "numeric" })}</div>}
+          {passed && <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY }}>BigSpaceAI Certified · {new Date().toLocaleDateString("en-SG", { month: "short", year: "numeric" })}</div>}
         </div>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <button onClick={() => pickChallenge(level)} style={{ background: RED, border: "none", color: WHITE, fontFamily: "'Anton', sans-serif", fontSize: "15px", letterSpacing: "0.12em", padding: "16px 32px", cursor: "pointer", flex: 1 }}>TRY ANOTHER →</button>
