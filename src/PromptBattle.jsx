@@ -79,7 +79,7 @@ const RedBar = () => (
 
 const Logo = () => (
   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-    <img src=logo.png" alt="BigSpaceAI" style={{ height: "32px", width: "auto" }} />
+    <img src=logo2.png" alt="BigSpaceAI" style={{ height: "32px", width: "auto" }} />
   </div>
 );
 
