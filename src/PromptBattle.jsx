@@ -79,7 +79,7 @@ const RedBar = () => (
 
 const Logo = () => (
   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-    <img src="https://raw.githubusercontent.com/bigspace11/promptbattle/main/public/logo.png" alt="BigSpaceAI" style={{ height: "32px", width: "auto" }} />
+    <img src=logo.png" alt="BigSpaceAI" style={{ height: "32px", width: "auto" }} />
   </div>
 );
 
