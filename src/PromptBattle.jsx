@@ -5,24 +5,6 @@ const BLACK = "#0a0a0a";
 const WHITE = "#ffffff";
 const GREY = "#888888";
 
-const CHALLENGES = {
-  beginner: [
-    { id: "b1", title: "THE EXPLAINER", scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.", hint: "Think about: who is the audience? What do they already know? What analogies might help?", evaluationFocus: "clarity, audience awareness, use of analogy" },
-    { id: "b2", title: "THE PRODUCT PITCH", scenario: "Write a compelling product description for a plain white coffee mug.", hint: "Think about: tone, sensory details, emotional appeal, who buys mugs and why?", evaluationFocus: "creativity, persuasion, specificity" },
-    { id: "b3", title: "THE REWRITER", scenario: "Rewrite this boring sentence to make it exciting: 'The meeting is on Tuesday at 3pm.'", hint: "Think about: energy, context, what makes people actually want to show up?", evaluationFocus: "creativity, transformation, voice" }
-  ],
-  intermediate: [
-    { id: "i1", title: "THE ROLE PLAYER", scenario: "Get an AI to act as a tough-but-fair venture capitalist and critique your business idea of 'an app that reminds you to drink water.'", hint: "Think about: persona definition, tone calibration, specific constraints for the critique", evaluationFocus: "persona clarity, constraint setting, specificity of task" },
-    { id: "i2", title: "THE FORMAT MASTER", scenario: "Get an AI to produce a weekly meal plan for a busy professional — but make it actually usable and scannable.", hint: "Think about: output format, constraints, what makes something 'usable' vs just a wall of text?", evaluationFocus: "format control, constraint clarity, practical usefulness" },
-    { id: "i3", title: "THE TONE SHIFTER", scenario: "Get an AI to write the same rejection email in three completely different tones: corporate, Gen Z casual, and Shakespearean.", hint: "Think about: how do you specify tone? What anchors do you give the AI to nail each one?", evaluationFocus: "tone specification, multi-output structuring, contrast" }
-  ],
-  advanced: [
-    { id: "a1", title: "THE CHAIN THINKER", scenario: "Get an AI to analyse why remote work might actually be hurting junior employees' careers — using a structured framework it builds itself.", hint: "Think about: chain-of-thought prompting, asking the AI to reason before concluding, framework construction", evaluationFocus: "reasoning scaffolding, framework elicitation, depth of analysis" },
-    { id: "a2", title: "THE CRITIC'S CRITIC", scenario: "Get an AI to write a social media post, then immediately critique it as a harsh editor, then rewrite it based on the critique.", hint: "Think about: multi-step outputs, role switching within one prompt, quality control loops", evaluationFocus: "multi-step structuring, self-critique elicitation, iteration" },
-    { id: "a3", title: "THE PERSONA ARCHITECT", scenario: "Build a prompt that turns an AI into a specific, memorable persona for a fictional brand — consistent across any question asked.", hint: "Think about: persona depth, constraints, fallback behaviour, voice consistency", evaluationFocus: "persona construction, constraint comprehensiveness, consistency engineering" }
-  ]
-};
-
 const LEVELS = {
   beginner:     { label: "BEGINNER",     emoji: "🌱", passMark: 65, badge: "PROMPT SEEDLING",     desc: "Just starting out with AI prompts" },
   intermediate: { label: "INTERMEDIATE", emoji: "⚡", passMark: 72, badge: "PROMPT PRACTITIONER", desc: "Comfortable with the basics" },
@@ -30,6 +12,43 @@ const LEVELS = {
 };
 
 const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
+
+async function generateChallenge(level) {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 500,
+      system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
+
+BEGINNER challenges: Simple, everyday tasks. Explaining things to non-technical people, writing basic content, rewriting or improving text. Real-world relatable scenarios.
+
+INTERMEDIATE challenges: Tasks requiring role-play, format control, tone shifting, or multi-part outputs. Requires thinking about how to structure the prompt.
+
+ADVANCED challenges: Complex tasks requiring chain-of-thought, multi-step reasoning, persona architecture, self-critique loops, or framework construction.
+
+Make challenges varied — draw from areas like business, marketing, HR, education, tech, food, travel, creativity, relationships, health, finance. Never repeat the same scenario twice.
+
+Return ONLY valid JSON, no markdown, no preamble:
+{
+  "title": "THE [2-3 WORD NAME IN CAPS]",
+  "scenario": "Clear 1-2 sentence description of exactly what the student needs to get an AI to do",
+  "hint": "Think about: [3 specific prompting considerations relevant to this challenge]",
+  "evaluationFocus": "comma-separated list of 3 prompting skills this tests"
+}`,
+      messages: [{ role: "user", content: `Generate a ${level} level challenge. Be creative and unexpected — avoid common examples like coffee mugs, WiFi explanations, or water reminder apps.` }]
+    })
+  });
+  const data = await response.json();
+  return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
+}
 
 async function judgePrompt(challenge, userPrompt, level) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
@@ -50,11 +69,11 @@ Score on four criteria (each 0-25):
 - Clarity: Is the instruction clear and unambiguous?
 - Specificity: Does it provide enough detail and constraints?
 - Awareness: Does it show understanding of audience and context?
-- Craft: Does it use good prompting techniques?
+- Craft: Does it use good prompting techniques like role-setting, format control, chain-of-thought, or constraints?
 
-Do NOT penalise for spelling or grammar errors in the student's prompt — LLMs handle these well and it is not a measure of prompting skill.
+Do NOT penalise for spelling or grammar errors — these do not affect AI output quality and are not a measure of prompting skill.
 
-Write the verdict in first person as a human expert — e.g. "What I liked here is...", "Where I'd push you to improve...", "This shows solid instincts...". Never say "the AI", "the model", or "Claude". Sound like a real trainer reviewing real work.
+Write the verdict in first person as a human expert. Never say "the AI", "the model", or "Claude".
 
 Return ONLY valid JSON, no markdown, no preamble:
 {
@@ -113,15 +132,25 @@ export default function PromptBattle() {
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
+  const [generating, setGenerating] = useState(false);
 
-  const pickChallenge = (lvl) => {
-    const list = CHALLENGES[lvl];
-    setChallenge(list[Math.floor(Math.random() * list.length)]);
+  const pickChallenge = async (lvl) => {
     setLevel(lvl);
     setUserPrompt("");
     setResults(null);
     setError(null);
-    setScreen("challenge");
+    setGenerating(true);
+    setScreen("generating");
+    try {
+      const c = await generateChallenge(lvl);
+      setChallenge(c);
+      setScreen("challenge");
+    } catch {
+      setError("Failed to generate challenge. Try again.");
+      setScreen("level");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const submit = async () => {
@@ -154,7 +183,7 @@ export default function PromptBattle() {
       <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
           <Logo />
-          {screen !== "home" && (
+          {screen !== "home" && screen !== "generating" && (
             <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, fontFamily: "'Barlow', sans-serif", fontSize: "12px", padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>← HOME</button>
           )}
         </div>
@@ -186,6 +215,7 @@ export default function PromptBattle() {
       <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", letterSpacing: "0.25em", color: RED, textTransform: "uppercase", marginBottom: "16px" }}>SELECT DIFFICULTY</div>
       <h2 style={{ ...H, fontSize: "clamp(42px, 9vw, 64px)", lineHeight: "1", marginBottom: "8px" }}>HOW CONFIDENT<br />ARE YOU?</h2>
       <div style={{ width: "40px", height: "4px", background: RED, marginBottom: "40px" }} />
+      {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "14px", marginBottom: "20px" }}>{error}</p>}
       {Object.entries(LEVELS).map(([key, cfg], i) => (
         <button key={key} onClick={() => pickChallenge(key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "transparent", border: "1px solid #222", borderLeft: `4px solid ${i === 0 ? "#333" : i === 1 ? "#555" : RED}`, padding: "24px 28px", marginBottom: "12px", cursor: "pointer", textAlign: "left" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#111"; e.currentTarget.style.borderLeftColor = RED; }}
@@ -203,7 +233,15 @@ export default function PromptBattle() {
     </div>
   );
 
-  if (screen === "challenge") {
+  if (screen === "generating") return wrap(
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
+      <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
+      <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em", marginBottom: "16px" }}>GENERATING CHALLENGE...</h2>
+      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Creating a fresh challenge just for you</p>
+    </div>
+  );
+
+  if (screen === "challenge" && challenge) {
     const cfg = LEVELS[level];
     return wrap(
       <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
@@ -228,6 +266,7 @@ export default function PromptBattle() {
           </div>
           {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "13px", marginTop: "12px" }}>{error}</p>}
         </div>
+        <button onClick={() => pickChallenge(level)} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "13px", letterSpacing: "0.1em", padding: "10px 20px", cursor: "pointer" }}>↻ GENERATE NEW CHALLENGE</button>
       </div>
     );
   }
