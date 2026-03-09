@@ -267,14 +267,12 @@ export default function PromptBattle() {
       const r = await judgePrompt(challenge, userPrompt, level);
       setResults(r);
       if (!bestScore || r.total > bestScore) setBestScore(r.total);
-      if (!isRetry) {
-        const newCount = challengeCount + 1;
-        setChallengeCount(newCount);
-        setResultHistory(prev => [...prev, r]);
-        if (newCount === 2 && !leadCaptured) {
-          setShowLeadGate(true);
-        }
-      }
+      const newCount = challengeCount + 1;
+setChallengeCount(newCount);
+setResultHistory(prev => [...prev, r]);
+if (newCount >= 2 && !leadCaptured) {
+  setShowLeadGate(true);
+}
       setScreen("results");
     } catch {
       setError("Connection failed. Try again.");
