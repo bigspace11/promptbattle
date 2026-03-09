@@ -13,20 +13,21 @@ const LEVELS = {
 
 const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
 
-async function generateChallenge(level) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+async function callAPI(body) {
+  const response = await fetch("/api/chat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 500,
-      system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  return data;
+}
+
+async function generateChallenge(level) {
+  const data = await callAPI({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 500,
+    system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
 
 BEGINNER challenges: Simple, everyday tasks. Explaining things to non-technical people, writing basic content, rewriting or improving text. Real-world relatable scenarios.
 
@@ -43,27 +44,16 @@ Return ONLY valid JSON, no markdown, no preamble:
   "hint": "Think about: [3 specific prompting considerations relevant to this challenge]",
   "evaluationFocus": "comma-separated list of 3 prompting skills this tests"
 }`,
-      messages: [{ role: "user", content: `Generate a ${level} level challenge. Be creative and unexpected — avoid common examples like coffee mugs, WiFi explanations, or water reminder apps.` }]
-    })
+    messages: [{ role: "user", content: `Generate a ${level} level challenge. Be creative and unexpected — avoid common examples like coffee mugs, WiFi explanations, or water reminder apps.` }]
   });
-  const data = await response.json();
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
 
 async function judgePrompt(challenge, userPrompt, level) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: `You are a senior AI trainer at BigSpaceAI, a leading AI education company in Singapore. You speak in first person as a human expert reviewing a student's work — never mention AI, Claude, or any language model. Your tone is direct, encouraging, and professional, like a seasoned coach giving real feedback after a workshop.
+  const data = await callAPI({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1000,
+    system: `You are a senior AI trainer at BigSpaceAI, a leading AI education company in Singapore. You speak in first person as a human expert reviewing a student's work — never mention AI, Claude, or any language model. Your tone is direct, encouraging, and professional, like a seasoned coach giving real feedback after a workshop.
 
 Score on four criteria (each 0-25):
 - Clarity: Is the instruction clear and unambiguous?
@@ -85,10 +75,8 @@ Return ONLY valid JSON, no markdown, no preamble:
   "improvements": ["improvement 1", "improvement 2"],
   "proTip": "one specific actionable tip written as a coach speaking directly to the student"
 }`,
-      messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nEVALUATION FOCUS: ${challenge.evaluationFocus}\nLEVEL: ${level}\n\nSTUDENT PROMPT:\n${userPrompt}` }]
-    })
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nEVALUATION FOCUS: ${challenge.evaluationFocus}\nLEVEL: ${level}\n\nSTUDENT PROMPT:\n${userPrompt}` }]
   });
-  const data = await response.json();
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
 
@@ -132,14 +120,12 @@ export default function PromptBattle() {
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const [generating, setGenerating] = useState(false);
 
   const pickChallenge = async (lvl) => {
     setLevel(lvl);
     setUserPrompt("");
     setResults(null);
     setError(null);
-    setGenerating(true);
     setScreen("generating");
     try {
       const c = await generateChallenge(lvl);
@@ -148,8 +134,6 @@ export default function PromptBattle() {
     } catch {
       setError("Failed to generate challenge. Try again.");
       setScreen("level");
-    } finally {
-      setGenerating(false);
     }
   };
 
