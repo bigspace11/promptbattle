@@ -143,7 +143,7 @@ function LeadGate({ level, scores, onComplete }) {
       <div style={{ fontSize: "32px", marginBottom: "16px" }}>🎯</div>
       <div style={{ ...H, fontSize: "24px", letterSpacing: "0.06em", color: WHITE, marginBottom: "12px" }}>GET YOUR FULL SESSION REPORT</div>
       <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: GREY, lineHeight: "1.7", marginBottom: "28px", maxWidth: "420px", margin: "0 auto 28px" }}>
-        You've completed 2 challenges. Enter your details to unlock your personalised session report and continue playing.
+        You've been at it a while. Drop your details to unlock your personalised report and keep playing.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "360px", margin: "0 auto" }}>
         <input
@@ -194,10 +194,10 @@ function SessionReport({ history, userName }) {
         </div>
       </div>
       <div style={{ marginBottom: "20px" }}>
-        <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>CHALLENGE SCORES</div>
+        <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>ATTEMPT SCORES</div>
         {history.map((r, i) => (
           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
-            <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Challenge {i + 1}</span>
+            <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
             <span style={{ ...H, fontSize: "18px", color: r.total >= 70 ? RED : WHITE }}>{r.total}</span>
           </div>
         ))}
@@ -230,7 +230,7 @@ export default function PromptBattle() {
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const [challengeCount, setChallengeCount] = useState(0);
+  const [submitCount, setSubmitCount] = useState(0);   // total submissions ever
   const [resultHistory, setResultHistory] = useState([]);
   const [showLeadGate, setShowLeadGate] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
@@ -238,26 +238,34 @@ export default function PromptBattle() {
   const [retryCount, setRetryCount] = useState(0);
   const [bestScore, setBestScore] = useState(null);
 
-  const pickChallenge = async (lvl, isRetry = false) => {
+  const loadNewChallenge = async (lvl) => {
     setLevel(lvl);
     setUserPrompt("");
     setResults(null);
     setError(null);
-    if (!isRetry) {
-      setRetryCount(0);
-      setBestScore(null);
-      setScreen("generating");
-      try {
-        const c = await generateChallenge(lvl);
-        setChallenge(c);
-        setScreen("challenge");
-      } catch {
-        setError("Failed to generate challenge. Try again.");
-        setScreen("level");
-      }
-    } else {
+    setRetryCount(0);
+    setBestScore(null);
+    setScreen("generating");
+    try {
+      const c = await generateChallenge(lvl);
+      setChallenge(c);
       setScreen("challenge");
+    } catch {
+      setError("Failed to generate challenge. Try again.");
+      setScreen("level");
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setUserPrompt("");
+    setResults(null);
+    setError(null);
+    setScreen("challenge");
+  };
+
+  const handleNextChallenge = () => {
+    loadNewChallenge(level);
   };
 
   const submit = async () => {
@@ -267,12 +275,12 @@ export default function PromptBattle() {
       const r = await judgePrompt(challenge, userPrompt, level);
       setResults(r);
       if (!bestScore || r.total > bestScore) setBestScore(r.total);
-      const newCount = challengeCount + 1;
-setChallengeCount(newCount);
-setResultHistory(prev => [...prev, r]);
-if (newCount >= 2 && !leadCaptured) {
-  setShowLeadGate(true);
-}
+      const newCount = submitCount + 1;
+      setSubmitCount(newCount);
+      setResultHistory(prev => [...prev, r]);
+      if (newCount >= 2 && !leadCaptured) {
+        setShowLeadGate(true);
+      }
       setScreen("results");
     } catch {
       setError("Connection failed. Try again.");
@@ -280,19 +288,7 @@ if (newCount >= 2 && !leadCaptured) {
     }
   };
 
-  const isRetry = retryCount > 0;
-
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
-    pickChallenge(level, true);
-  };
-
-  const handleNextChallenge = () => {
-    setChallengeCount(prev => prev + 1);
-    pickChallenge(level);
-  };
-
-  const handleLeadComplete = (name, email) => {
+  const handleLeadComplete = (name) => {
     setUserName(name);
     setLeadCaptured(true);
     setShowLeadGate(false);
@@ -318,9 +314,9 @@ if (newCount >= 2 && !leadCaptured) {
           <Logo />
           {screen !== "home" && screen !== "generating" && screen !== "judging" && (
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {challengeCount > 0 && (
+              {submitCount > 0 && (
                 <span style={{ ...H, fontSize: "12px", color: GREY, letterSpacing: "0.1em" }}>
-                  {challengeCount} DONE
+                  {submitCount} {submitCount === 1 ? "ATTEMPT" : "ATTEMPTS"}
                 </span>
               )}
               <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, fontFamily: "'Barlow', sans-serif", fontSize: "12px", padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>← HOME</button>
@@ -343,7 +339,16 @@ if (newCount >= 2 && !leadCaptured) {
           <div key={i} style={{ border: "1px solid #222", padding: "8px 14px", ...H, fontSize: "12px", letterSpacing: "0.1em", color: GREY }}>{s}</div>
         ))}
       </div>
-      <button onClick={() => { setChallengeCount(0); setResultHistory([]); setLeadCaptured(false); setUserName(""); setScreen("level"); }} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", letterSpacing: "0.12em", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
+      <button onClick={() => {
+        setSubmitCount(0);
+        setResultHistory([]);
+        setLeadCaptured(false);
+        setUserName("");
+        setShowLeadGate(false);
+        setRetryCount(0);
+        setBestScore(null);
+        setScreen("level");
+      }} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", letterSpacing: "0.12em", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
       <div style={{ marginTop: "64px", borderTop: "1px solid #1a1a1a", paddingTop: "24px" }}>
         <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: "#444", letterSpacing: "0.05em" }}>Part of the BigSpaceAI AI Prompting Essentials course</p>
       </div>
@@ -357,7 +362,7 @@ if (newCount >= 2 && !leadCaptured) {
       <div style={{ width: "40px", height: "4px", background: RED, marginBottom: "40px" }} />
       {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "14px", marginBottom: "20px" }}>{error}</p>}
       {Object.entries(LEVELS).map(([key, cfg], i) => (
-        <button key={key} onClick={() => pickChallenge(key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "transparent", border: "1px solid #222", borderLeft: `4px solid ${i === 0 ? "#333" : i === 1 ? "#555" : RED}`, padding: "24px 28px", marginBottom: "12px", cursor: "pointer", textAlign: "left" }}
+        <button key={key} onClick={() => loadNewChallenge(key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "transparent", border: "1px solid #222", borderLeft: `4px solid ${i === 0 ? "#333" : i === 1 ? "#555" : RED}`, padding: "24px 28px", marginBottom: "12px", cursor: "pointer", textAlign: "left" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#111"; e.currentTarget.style.borderLeftColor = RED; }}
           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = i === 0 ? "#333" : i === 1 ? "#555" : RED; }}>
           <div>
@@ -412,7 +417,7 @@ if (newCount >= 2 && !leadCaptured) {
           </div>
           {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "13px", marginTop: "12px" }}>{error}</p>}
         </div>
-        <button onClick={() => pickChallenge(level)} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "13px", letterSpacing: "0.1em", padding: "10px 20px", cursor: "pointer" }}>↻ GENERATE NEW CHALLENGE</button>
+        <button onClick={() => loadNewChallenge(level)} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "13px", letterSpacing: "0.1em", padding: "10px 20px", cursor: "pointer" }}>↻ GENERATE NEW CHALLENGE</button>
       </div>
     );
   }
@@ -436,7 +441,7 @@ if (newCount >= 2 && !leadCaptured) {
       <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
         <div style={{ borderTop: `4px solid ${RED}`, background: "#0d0d0d", padding: "40px", marginBottom: "16px", textAlign: "center" }}>
           <div style={{ ...H, fontSize: "13px", letterSpacing: "0.25em", color: GREY, marginBottom: "16px" }}>
-            {isRetry ? `ATTEMPT ${retryCount + 1} · BEST: ${bestScore}` : "YOUR SCORE"}
+            {retryCount > 0 ? `ATTEMPT ${retryCount + 1} · BEST: ${bestScore}` : "YOUR SCORE"}
           </div>
           <div style={{ ...H, fontSize: "clamp(80px, 20vw, 120px)", lineHeight: "1", color: passed ? RED : WHITE, marginBottom: "8px" }}>{results.total}</div>
           <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY, marginBottom: "20px" }}>out of 100 · Pass mark: {cfg.passMark}</div>
