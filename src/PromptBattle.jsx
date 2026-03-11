@@ -250,10 +250,11 @@ export default function PromptBattle() {
       const c = await generateChallenge(lvl);
       setChallenge(c);
       setScreen("challenge");
-    } catch {
-      setError("Failed to generate challenge. Try again.");
-      setScreen("level");
-    }
+   } catch (e) {
+        console.error("Challenge gen failed:", e);
+        setError("Failed to generate challenge. Try again.");
+        setScreen("level");
+      }
   };
 
   const handleRetry = () => {
@@ -265,7 +266,7 @@ export default function PromptBattle() {
   };
 
   const handleNextChallenge = () => {
-    loadNewChallenge(level);
+    pickChallenge(level);
   };
 
   const submit = async () => {
