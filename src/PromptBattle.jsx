@@ -33,7 +33,7 @@ async function subscribeToMailchimp(email, name, score, level) {
 
 async function generateChallenge(level) {
   const data = await callAPI({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5",
     max_tokens: 500,
     system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
 
@@ -57,7 +57,7 @@ Return ONLY valid JSON, no markdown, no preamble:
 
 async function judgePrompt(challenge, userPrompt, level) {
   const data = await callAPI({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5",
     max_tokens: 1500,
     system: `You are a senior AI trainer at BigSpaceAI, a leading AI education company in Singapore. You speak in first person as a human expert — never mention AI, Claude, or any language model. Your tone is direct, encouraging, and professional.
 
