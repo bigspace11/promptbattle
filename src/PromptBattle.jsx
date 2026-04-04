@@ -95,7 +95,6 @@ const GridBg = () => (
   <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
 );
 const RedBar = () => <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />;
-const Logo = () => <div style={{ display: "flex", alignItems: "center" }}><img src="/logo2.png" alt="BigSpaceAI" style={{ height: "36px", width: "auto" }} /></div>;
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
@@ -312,7 +311,7 @@ export default function PromptBattle() {
       <GridBg />
       <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
-          <Logo />
+
           {screen !== "home" && screen !== "generating" && screen !== "judging" && (
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {submitCount > 0 && (
