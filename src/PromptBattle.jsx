@@ -96,15 +96,31 @@ const GridBg = () => (
 );
 const RedBar = () => <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />;
 const Navigation = () => (
-  <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "50px", background: "#000", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99 }}>
-    <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
-      <a href="https://bigspaceai.com" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "13px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Home</a>
-      <a href="https://bigspaceai.com/academy" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "13px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Academy</a>
-      <a href="https://bigspaceai.com/workflow-plus" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "13px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Workflow+</a>
-      <a href="https://bigspaceai.com/free-tools" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "13px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Free Tools</a>
+  <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "60px", background: "#000", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", justifyContent: "space-between", paddingLeft: "24px", paddingRight: "24px", zIndex: 99 }}>
+    {/* Logo Left */}
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: "150px" }}>
+      <div style={{ width: "32px", height: "32px", background: "#ff0000", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}>
+        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: "12px", color: "white", letterSpacing: "0.05em" }}>BS</span>
+      </div>
+      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: "16px", color: "white", letterSpacing: "0.08em", textTransform: "uppercase" }}>BigSpace<span style={{ color: "#ff0000" }}>AI</span></span>
+    </div>
+
+    {/* Menu Center */}
+    <div style={{ display: "flex", gap: "32px", alignItems: "center", flex: 1, justifyContent: "center" }}>
+      <a href="https://bigspaceai.com" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Home</a>
+      <a href="https://bigspaceai.com/academy" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Academy</a>
+      <a href="https://bigspaceai.com/workflow-plus" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Workflow+</a>
+      <a href="https://bigspaceai.com/free-tools" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Free Tools</a>
+    </div>
+
+    {/* Right Side - Search & Login */}
+    <div style={{ display: "flex", gap: "16px", alignItems: "center", minWidth: "150px", justifyContent: "flex-end" }}>
+      <button style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer", fontSize: "16px" }}>🔍</button>
+      <a href="https://bigspaceai.com/account/login" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Log In</a>
     </div>
   </div>
  );
+
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
@@ -317,10 +333,11 @@ export default function PromptBattle() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
-           <RedBar />
-      <Navigation />
-      <GridBg />
-      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 20px 80px", paddingTop: "60px" }}>
+      <RedBar />
+<Navigation />
+<GridBg />
+<div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px", paddingTop: "80px" }}>
+
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
 
