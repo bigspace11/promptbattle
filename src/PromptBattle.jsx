@@ -96,29 +96,11 @@ const GridBg = () => (
 );
 const RedBar = () => <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />;
 const Navigation = () => (
-  <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "auto", background: "#000", borderBottom: "1px solid rgba(255,255,255,0.1)", zIndex: 99, paddingTop: "15px", paddingBottom: "15px", paddingLeft: "60px", paddingRight: "60px" }}>
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: "1300px", margin: "0 auto" }}>
-      
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <div style={{ width: "28px", height: "28px", background: "#eb1d25", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: "11px", color: "white" }}>BS</span>
-        </div>
-        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: "14px", color: "white", letterSpacing: "0.08em" }}>BigSpace<span style={{ color: "#eb1d25" }}>AI</span></span>
-      </div>
-
-      {/* Menu */}
-      <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-        <a href="https://bigspaceai.com" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "16px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.02em" }}>Home</a>
-        <a href="https://bigspaceai.com/academy" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "16px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.02em" }}>Academy</a>
-        <a href="https://bigspaceai.com/workflow-plus" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "16px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.02em" }}>Workflow+</a>
-        <a href="https://bigspaceai.com/free-tools" style={{ color: "#fff", textDecoration: "none", fontFamily: "'Barlow', sans-serif", fontSize: "16px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.02em" }}>Free Tools</a>
-      </div>
-
-      
-    </div>
+  <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "60px", background: "#000", borderBottom: "1px solid rgba(255,255,255,0.1)", zIndex: 99, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", width: "auto" }} />
   </div>
- );
+);
+
 
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
@@ -335,7 +317,8 @@ export default function PromptBattle() {
      <RedBar />
 <Navigation />
 <GridBg />
-<div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px", paddingTop: "100px" }}>
+<div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px", paddingTop: "80px" }}>
+
 
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
