@@ -97,9 +97,12 @@ const GridBg = () => (
 const RedBar = () => <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />;
 const Navigation = () => (
   <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "60px", background: "#000", borderBottom: "1px solid rgba(255,255,255,0.1)", zIndex: 99, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", width: "auto" }} />
+    <a href="https://bigspaceai.com" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", width: "auto", cursor: "pointer" }} />
+    </a>
   </div>
-);
+ );
+
 
 
 
