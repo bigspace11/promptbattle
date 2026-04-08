@@ -74,19 +74,15 @@ For scoreReasons: one honest sentence per category explaining exactly why they g
 For rewrittenPrompt: rewrite their prompt to show what a high-scoring version looks like.
 For rewriteNote: one sentence on the single most important change made.
 
-Return ONLY valid JSON, no markdown, no preamble:
+eturn ONLY valid JSON, no markdown, no preamble:
 {
- "scores": { "target": 0-20, "human": 0-20, "refs": 0-20, "nav": 0-20, "refine": 0-20 },
+  "scores": { "target": 0-20, "human": 0-20, "refs": 0-20, "nav": 0-20, "refine": 0-20 },
   "scoreReasons": { "target": "...", "human": "...", "refs": "...", "nav": "...", "refine": "..." },
   "total": 0-100,
   "grade": "Needs Work|Getting There|Solid|Excellent|Outstanding",
-  "verdict": "2-3 sentence expert feedback in first person, warm but honest",
-  "strengths": ["strength 1", "strength 2"],
-  "improvements": ["improvement 1", "improvement 2"],
-  "proTip": "one specific actionable tip",
   "rewrittenPrompt": "the improved version of their prompt",
   "rewriteNote": "one sentence on the key change made"
-}`,
+}
     messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nEVALUATION FOCUS: ${challenge.evaluationFocus}\nLEVEL: ${level}\n\nSTUDENT PROMPT:\n${userPrompt}` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
@@ -491,28 +487,7 @@ export default function PromptBattle() {
   <ScoreBar label="KEEP REFINING" value={results.scores.refine} reason={results.scoreReasons?.refine} delay={600} />
 </div>
 
-        <div style={{ border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
-          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "16px" }}>EXPERT FEEDBACK</div>
-          <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", lineHeight: "1.9", color: "#e0e0e0", marginBottom: "28px", fontWeight: "500" }}>{results.verdict}</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
-            <div>
-              <div style={{ ...H, fontSize: "13px", letterSpacing: "0.15em", color: WHITE, marginBottom: "14px" }}>✓ STRENGTHS</div>
-              {results.strengths.map((s, i) => (
-                <div key={i} style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: "#bbb", lineHeight: "1.7", marginBottom: "10px", paddingLeft: "12px", borderLeft: `2px solid ${RED}` }}>{s}</div>
-              ))}
-            </div>
-            <div>
-              <div style={{ ...H, fontSize: "13px", letterSpacing: "0.15em", color: WHITE, marginBottom: "14px" }}>↑ TO IMPROVE</div>
-              {results.improvements.map((s, i) => (
-                <div key={i} style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: "#bbb", lineHeight: "1.7", marginBottom: "10px", paddingLeft: "12px", borderLeft: "2px solid #333" }}>{s}</div>
-              ))}
-            </div>
-          </div>
-          <div style={{ background: "#111", borderLeft: `3px solid ${RED}`, padding: "16px 20px" }}>
-            <div style={{ ...H, fontSize: "11px", letterSpacing: "0.2em", color: RED, marginBottom: "8px" }}>⚡ PRO TIP</div>
-            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "16px", color: "#bbb", lineHeight: "1.7" }}>{results.proTip}</p>
-          </div>
-        </div>
+        
 
         {results.rewrittenPrompt && (
           <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid #333`, padding: "28px", marginBottom: "16px" }}>
