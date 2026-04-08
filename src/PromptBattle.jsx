@@ -451,17 +451,18 @@ export default function PromptBattle() {
     );
   }
 
-  if (screen === "judging") return wrap(
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
-      <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
-      <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em", marginBottom: "16px" }}>ANALYSING YOUR PROMPT...</h2>
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-        {["CLARITY", "SPECIFICITY", "AWARENESS", "CRAFT"].map((c, i) => (
-          <span key={i} style={{ ...H, fontSize: "13px", letterSpacing: "0.15em", color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite` }}>{c} ·</span>
-        ))}
-      </div>
+ if (screen === "judging") return wrap(
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
+    <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
+    <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em", marginBottom: "16px" }}>APPLYING THINK FRAMEWORK...</h2>
+    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+      {/* Updated to your 5 THINK Pillars */}
+      {["TARGET OUTCOME", "HUMAN CONTEXT", "INCLUDE REFERENCES", "NAVIGATE RESPONSE", "KEEP REFINING"].map((c, i) => (
+        <span key={i} style={{ ...H, fontSize: "13px", letterSpacing: "0.15em", color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite` }}>{c} ·</span>
+      ))}
     </div>
-  );
+  </div>
+);
 
   if (screen === "results" && results) {
     const cfg = LEVELS[level];
@@ -479,11 +480,16 @@ export default function PromptBattle() {
 
         <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
           <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "24px" }}>SCORE BREAKDOWN</div>
-          <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons?.clarity} delay={0} />
-          <ScoreBar label="SPECIFICITY" value={results.scores.specificity} reason={results.scoreReasons?.specificity} delay={150} />
-          <ScoreBar label="CONTEXT AWARENESS" value={results.scores.awareness} reason={results.scoreReasons?.awareness} delay={300} />
-          <ScoreBar label="CRAFT & TECHNIQUE" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
-        </div>
+          <ScoreBar label="TARGET OUTCOME" value={results.scores.target} reason={results.scoreReasons?.target} delay={0} />
+  
+  <ScoreBar label="HUMAN CONTEXT" value={results.scores.human} reason={results.scoreReasons?.human} delay={150} />
+  
+  <ScoreBar label="INCLUDE REFERENCES" value={results.scores.refs} reason={results.scoreReasons?.refs} delay={300} />
+  
+  <ScoreBar label="NAVIGATE RESPONSE" value={results.scores.nav} reason={results.scoreReasons?.nav} delay={450} />
+
+  <ScoreBar label="KEEP REFINING" value={results.scores.refine} reason={results.scoreReasons?.refine} delay={600} />
+</div>
 
         <div style={{ border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
           <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "16px" }}>EXPERT FEEDBACK</div>
