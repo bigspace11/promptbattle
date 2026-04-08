@@ -58,8 +58,8 @@ Return ONLY valid JSON, no markdown, no preamble:
 async function judgePrompt(challenge, userPrompt, level) {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
-    max_tokens: 1500,
-    system: `You are a senior AI trainer at BigSpaceAI, a leading AI education company in Singapore. You speak in first person as a human expert — never mention AI, Claude, or any language model. Your tone is direct, encouraging, and professional.
+    max_tokens: 1000,
+    system: `You are a senior AI trainer at BigSpaceAI. Speak in first person as a human expert.
 
 Score on the THINK Framework criteria (each 0-20, total 100):
 - Target Outcome: Did they define the desired result clearly?
@@ -68,13 +68,7 @@ Score on the THINK Framework criteria (each 0-20, total 100):
 - Navigate Response: Did they include instructions for the AI to assess its own output?
 - Keep Refining: Does the prompt encourage iterative improvement?
 
-Do NOT penalise for spelling or grammar errors.
-
-For scoreReasons: one honest sentence per category explaining exactly why they got that score.
-For rewrittenPrompt: rewrite their prompt to show what a high-scoring version looks like.
-For rewriteNote: one sentence on the single most important change made.
-
-eturn ONLY valid JSON, no markdown, no preamble:
+Return ONLY valid JSON:
 {
   "scores": { "target": 0-20, "human": 0-20, "refs": 0-20, "nav": 0-20, "refine": 0-20 },
   "scoreReasons": { "target": "...", "human": "...", "refs": "...", "nav": "...", "refine": "..." },
@@ -82,7 +76,7 @@ eturn ONLY valid JSON, no markdown, no preamble:
   "grade": "Needs Work|Getting There|Solid|Excellent|Outstanding",
   "rewrittenPrompt": "the improved version of their prompt",
   "rewriteNote": "one sentence on the key change made"
-}
+}`,
     messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nEVALUATION FOCUS: ${challenge.evaluationFocus}\nLEVEL: ${level}\n\nSTUDENT PROMPT:\n${userPrompt}` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
@@ -184,25 +178,28 @@ function LeadGate({ level, scores, onComplete }) {
 function SessionReport({ history, userName }) {
   const avg = Math.round(history.reduce((s, r) => s + r.total, 0) / history.length);
   
-  // New THINK mapping
+  // THINK mapping
   const avgTarget = Math.round(history.reduce((s, r) => s + r.scores.target, 0) / history.length);
   const avgHuman = Math.round(history.reduce((s, r) => s + r.scores.human, 0) / history.length);
   const avgRefs = Math.round(history.reduce((s, r) => s + r.scores.refs, 0) / history.length);
   const avgNav = Math.round(history.reduce((s, r) => s + r.scores.nav, 0) / history.length);
   const avgRefine = Math.round(history.reduce((s, r) => s + r.scores.refine, 0) / history.length);
 
-  const strongest = [
+  const skills = [
     ["Target Outcome", avgTarget], 
     ["Human Context", avgHuman], 
     ["References", avgRefs], 
     ["Navigation", avgNav], 
     ["Refining", avgRefine]
   ].sort((a, b) => b[1] - a[1]);
+
   const trend = history.length > 1 ? history[history.length - 1].total - history[0].total : 0;
 
   return (
     <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
       <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "20px" }}>📊 YOUR SESSION REPORT{userName ? ` — ${userName.toUpperCase()}` : ""}</div>
+      
+      {/* Average and Trend Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
         <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
           <div style={{ ...H, fontSize: "42px", color: RED }}>{avg}</div>
@@ -213,8 +210,10 @@ function SessionReport({ history, userName }) {
           <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY }}>Score trend</div>
         </div>
       </div>
+
+      {/* List of attempts */}
       <div style={{ marginBottom: "20px" }}>
-        <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>ATTEMPT SCORES</div>
+        <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>ATTEMPT HISTORY</div>
         {history.map((r, i) => (
           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
             <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
@@ -222,21 +221,17 @@ function SessionReport({ history, userName }) {
           </div>
         ))}
       </div>
+
+      {/* Numerical breakdown only */}
       <div style={{ background: "#111", padding: "16px 20px" }}>
-        <div style={{ ...H, fontSize: "11px", letterSpacing: "0.15em", color: WHITE, marginBottom: "10px" }}>SKILL BREAKDOWN</div>
+        <div style={{ ...H, fontSize: "11px", letterSpacing: "0.15em", color: WHITE, marginBottom: "10px" }}>THINK FRAMEWORK AVG.</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-          {strongest.map(([name, score], i) => (
+          {skills.map(([name, score], i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: i === 0 ? WHITE : GREY }}>{name}</span>
-              <span style={{ ...H, fontSize: "13px", color: i === 0 ? RED : GREY }}>{score}/25</span>
+              <span style={{ ...H, fontSize: "13px", color: i === 0 ? RED : GREY }}>{score}/20</span>
             </div>
           ))}
-        </div>
-        <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #222" }}>
-          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY }}>Strongest: </span>
-          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: WHITE }}>{strongest[0][0]}</span>
-          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY }}> · Needs work: </span>
-          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: WHITE }}>{strongest[strongest.length - 1][0]}</span>
         </div>
       </div>
     </div>
