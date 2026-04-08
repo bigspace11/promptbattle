@@ -61,11 +61,12 @@ async function judgePrompt(challenge, userPrompt, level) {
     max_tokens: 1500,
     system: `You are a senior AI trainer at BigSpaceAI, a leading AI education company in Singapore. You speak in first person as a human expert — never mention AI, Claude, or any language model. Your tone is direct, encouraging, and professional.
 
-Score on four criteria (each 0-25):
-- Clarity: Is the instruction clear and unambiguous?
-- Specificity: Does it provide enough detail and constraints?
-- Awareness: Does it show understanding of audience and context?
-- Craft: Does it use good prompting techniques like role-setting, format control, chain-of-thought, or constraints?
+Score on the THINK Framework criteria (each 0-20, total 100):
+- Target Outcome: Did they define the desired result clearly?
+- Human Context: Did they include purpose, audience, and tone?
+- Include References: Did they provide examples or structural guides?
+- Navigate Response: Did they include instructions for the AI to assess its own output?
+- Keep Refining: Does the prompt encourage iterative improvement?
 
 Do NOT penalise for spelling or grammar errors.
 
@@ -75,8 +76,8 @@ For rewriteNote: one sentence on the single most important change made.
 
 Return ONLY valid JSON, no markdown, no preamble:
 {
-  "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 },
-  "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." },
+ "scores": { "target": 0-20, "human": 0-20, "refs": 0-20, "nav": 0-20, "refine": 0-20 },
+  "scoreReasons": { "target": "...", "human": "...", "refs": "...", "nav": "...", "refine": "..." },
   "total": 0-100,
   "grade": "Needs Work|Getting There|Solid|Excellent|Outstanding",
   "verdict": "2-3 sentence expert feedback in first person, warm but honest",
@@ -109,21 +110,25 @@ const Navigation = () => (
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
   const [show, setShow] = useState(false);
+  
   useEffect(() => {
-    const t = setTimeout(() => { setWidth(value / 25 * 100); setShow(true); }, delay + 300);
+    // Updated math: value / 20 * 100 because max is now 20
+    const t = setTimeout(() => { setWidth(value / 20 * 100); setShow(true); }, delay + 300);
     return () => clearTimeout(t);
   }, [value, delay]);
+
   return (
     <div style={{ marginBottom: "22px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+        {/* Label now reflects THINK pillars */}
         <span style={{ ...H, fontSize: "15px", letterSpacing: "0.06em", color: "#aaa" }}>{label}</span>
-        <span style={{ ...H, fontSize: "16px", color: value >= 20 ? RED : value >= 15 ? WHITE : GREY }}>{value}/25</span>
+        <span style={{ ...H, fontSize: "16px", color: value >= 16 ? RED : value >= 12 ? WHITE : GREY }}>{value}/20</span>
       </div>
       <div style={{ background: "#1f1f1f", height: "6px", marginBottom: reason ? "10px" : "0" }}>
         <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s cubic-bezier(0.22, 1, 0.36, 1)" }} />
       </div>
       {reason && show && (
-        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: value >= 20 ? "#888" : "#666", lineHeight: "1.6", borderLeft: `2px solid #2a2a2a`, paddingLeft: "10px" }}>{reason}</p>
+        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: "#888", lineHeight: "1.6", borderLeft: `2px solid #2a2a2a`, paddingLeft: "10px" }}>{reason}</p>
       )}
     </div>
   );
@@ -182,11 +187,21 @@ function LeadGate({ level, scores, onComplete }) {
 
 function SessionReport({ history, userName }) {
   const avg = Math.round(history.reduce((s, r) => s + r.total, 0) / history.length);
-  const avgClarity = Math.round(history.reduce((s, r) => s + r.scores.clarity, 0) / history.length);
-  const avgSpec = Math.round(history.reduce((s, r) => s + r.scores.specificity, 0) / history.length);
-  const avgAware = Math.round(history.reduce((s, r) => s + r.scores.awareness, 0) / history.length);
-  const avgCraft = Math.round(history.reduce((s, r) => s + r.scores.craft, 0) / history.length);
-  const strongest = [["Clarity", avgClarity], ["Specificity", avgSpec], ["Awareness", avgAware], ["Craft", avgCraft]].sort((a, b) => b[1] - a[1]);
+  
+  // New THINK mapping
+  const avgTarget = Math.round(history.reduce((s, r) => s + r.scores.target, 0) / history.length);
+  const avgHuman = Math.round(history.reduce((s, r) => s + r.scores.human, 0) / history.length);
+  const avgRefs = Math.round(history.reduce((s, r) => s + r.scores.refs, 0) / history.length);
+  const avgNav = Math.round(history.reduce((s, r) => s + r.scores.nav, 0) / history.length);
+  const avgRefine = Math.round(history.reduce((s, r) => s + r.scores.refine, 0) / history.length);
+
+  const strongest = [
+    ["Target Outcome", avgTarget], 
+    ["Human Context", avgHuman], 
+    ["References", avgRefs], 
+    ["Navigation", avgNav], 
+    ["Refining", avgRefine]
+  ].sort((a, b) => b[1] - a[1]);
   const trend = history.length > 1 ? history[history.length - 1].total - history[0].total : 0;
 
   return (
