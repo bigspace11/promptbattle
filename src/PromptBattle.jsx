@@ -253,12 +253,7 @@ export default function PromptBattle() {
           <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
         </div>
 
-        {results.rewrittenPrompt && (
-          <div style={{ background: "#0f0f0f", padding: "28px", marginBottom: "16px", border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}` }}>
-            <div style={{ ...H, fontSize: "14px", color: RED, marginBottom: "12px", letterSpacing: "0.1em" }}>PRO TIP: REWRITTEN VERSION</div>
-            <p style={{ ...B, fontSize: "15px", color: "#ddd", whiteSpace: "pre-wrap", lineHeight: "1.8" }}>{results.rewrittenPrompt}</p>
-          </div>
-        )}
+      
 
         <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
           <div style={{ fontSize: "48px", marginBottom: "12px" }}>{passed ? "🏆" : "💪"}</div>
