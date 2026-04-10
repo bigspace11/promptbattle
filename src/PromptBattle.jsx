@@ -5,11 +5,8 @@ const BLACK = "#0a0a0a";
 const WHITE = "#ffffff";
 const GREY = "#888888";
 
-const LEVELS = {
-  beginner: { label: "BEGINNER", emoji: "🌱", passMark: 65, badge: "PROMPT SEEDLING", desc: "Just starting out with AI prompts" },
-};
-
-const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
+const H = { fontFamily: "'Anton', sans-serif", textTransform: "uppercase" };
+const B = { fontFamily: "'Barlow', sans-serif" };
 
 async function callAPI(body) {
   const response = await fetch("/api/chat", {
@@ -20,54 +17,43 @@ async function callAPI(body) {
   return response.json();
 }
 
-async function subscribeToMailchimp(email, name, score, level) {
-  const response = await fetch("/api/subscribe", {
+async function subscribeToMailchimp(email, name, score) {
+  await fetch("/api/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, name, score, level })
+    body: JSON.stringify({ email, name, score, level: "beginner" })
   });
-  return response.json();
 }
 
-async function generateChallenge(level) {
+async function generateChallenge() {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
     max_tokens: 500,
-    system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge. Draw from business, marketing, HR, education, tech, food, travel, creativity, relationships, health, finance.
-
-Return ONLY valid JSON, no markdown, no preamble:
+    system: `You are a creative challenge designer for BigSpaceAI. Return ONLY valid JSON:
 {
-  "title": "THE [2-3 WORD NAME IN CAPS]",
-  "scenario": "Clear 1-2 sentence description of exactly what the student needs to get an AI to do",
-  "hint": "Think about: [3 specific prompting considerations relevant to this challenge]",
-  "evaluationFocus": "comma-separated list of 3 prompting skills this tests"
+  "title": "THE [NAME]",
+  "scenario": "1-2 sentence description",
+  "hint": "Think about: [3 considerations]",
+  "evaluationFocus": "skills tested"
 }`,
-    messages: [{ role: "user", content: `Generate a beginner level challenge. Be creative and unexpected.` }]
+    messages: [{ role: "user", content: `Generate a beginner level challenge.` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
 
-async function judgePrompt(challenge, userPrompt, level) {
+async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
     max_tokens: 1000,
-    system: `You are a senior AI trainer at BigSpaceAI. Speak in first person as a human expert.
-
-Score on four criteria (each 0-25):
-- Clarity: Is the instruction clear and unambiguous?
-- Specificity: Does it provide enough detail and constraints?
-- Awareness: Does it show understanding of audience and context?
-- Craft: Does it use good prompting techniques?
-
-Return ONLY valid JSON:
+    system: `You are a senior AI trainer at BigSpaceAI. Return ONLY valid JSON:
 {
  "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 },
  "total": 0-100,
  "grade": "Needs Work|Getting There|Solid|Excellent|Outstanding",
- "rewrittenPrompt": "the improved version of their prompt",
- "rewriteNote": "one sentence on the key change made"
+ "rewrittenPrompt": "improved version",
+ "rewriteNote": "key change note"
 }`,
-    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nEVALUATION FOCUS: ${challenge.evaluationFocus}\nLEVEL: ${level}\n\nSTUDENT PROMPT:\n${userPrompt}` }]
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT: ${userPrompt}` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
@@ -76,99 +62,49 @@ const GridBg = () => (
   <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
 );
 const RedBar = () => <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />;
-const Navigation = () => (
-  <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "60px", background: "#000", borderBottom: "1px solid rgba(255,255,255,0.1)", zIndex: 99, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <a href="https://bigspaceai.com" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", width: "auto", cursor: "pointer" }} />
-    </a>
-  </div>
-);
 
-function ScoreBar({ label, value, reason, delay = 0 }) {
+function ScoreBar({ label, value, delay = 0 }) {
   const [width, setWidth] = useState(0);
-  const [show, setShow] = useState(false);
-  
   useEffect(() => {
-    const t = setTimeout(() => { setWidth((value / 25) * 100); setShow(true); }, delay + 300);
+    const t = setTimeout(() => setWidth((value / 25) * 100), delay + 300);
     return () => clearTimeout(t);
   }, [value, delay]);
 
   return (
     <div style={{ marginBottom: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "13px", letterSpacing: "0.12em", color: GREY }}>{label}</span>
-        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "14px", color: value >= 20 ? RED : value >= 15 ? WHITE : GREY }}>{value}/25</span>
+        <span style={{ ...H, fontSize: "13px", letterSpacing: "0.12em", color: GREY }}>{label}</span>
+        <span style={{ ...H, fontSize: "14px", color: value >= 20 ? RED : WHITE }}>{value}/25</span>
       </div>
-      <div style={{ background: "#1f1f1f", height: "6px", marginBottom: reason ? "10px" : "0" }}>
+      <div style={{ background: "#1f1f1f", height: "6px" }}>
         <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s cubic-bezier(0.22, 1, 0.36, 1)" }} />
       </div>
-      {reason && show && (
-        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: "#888", lineHeight: "1.6", borderLeft: `2px solid #2a2a2a`, paddingLeft: "10px" }}>{reason}</p>
-      )}
     </div>
   );
 }
 
-function LeadGate({ level, scores, onComplete }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+function PerformanceTracker({ history }) {
+  if (history.length < 2) return null;
 
-  const submit = async () => {
-    if (!name.trim() || !email.trim() || !email.includes("@")) return;
-    setLoading(true);
-    try {
-      await subscribeToMailchimp(email, name, scores.total, level);
-      onComplete(name, email);
-    } catch {
-      setError("Something went wrong. Try again.");
-      setLoading(false);
-    }
-  };
+  const firstScore = history[0].total;
+  const latestScore = history[history.length - 1].total;
+  const improvement = latestScore - firstScore;
+  const percentChange = ((improvement / (firstScore || 1)) * 100).toFixed(0);
 
   return (
-    <div style={{ border: `2px solid ${RED}`, background: "#0d0d0d", padding: "36px", marginBottom: "16px", textAlign: "center" }}>
-      <div style={{ fontSize: "32px", marginBottom: "16px" }}>🎯</div>
-      <div style={{ ...H, fontSize: "24px", letterSpacing: "0.06em", color: WHITE, marginBottom: "12px" }}>GET YOUR FULL SESSION REPORT</div>
-      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: GREY, lineHeight: "1.7", marginBottom: "28px", maxWidth: "420px", margin: "0 auto 28px" }}>
-        You've been at it a while. Drop your details to unlock your personalised report and keep playing.
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "360px", margin: "0 auto" }}>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={{ background: "#111", border: "1px solid #333", color: WHITE, padding: "14px", width: "100%" }} />
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email" type="email" style={{ background: "#111", border: "1px solid #333", color: WHITE, padding: "14px", width: "100%" }} />
-        {error && <p style={{ color: RED, fontSize: "13px" }}>{error}</p>}
-        <button onClick={submit} disabled={loading || !name.trim() || !email.trim()} style={{ background: RED, color: WHITE, ...H, padding: "16px", cursor: "pointer" }}>UNLOCK MY REPORT →</button>
-      </div>
-    </div>
-  );
-}
-
-function SessionReport({ history, userName }) {
-  const avg = Math.round(history.reduce((s, r) => s + r.total, 0) / history.length);
-  const trend = history.length > 1 ? history[history.length - 1].total - history[0].total : 0;
-
-  return (
-    <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
-      <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "20px" }}>📊 YOUR SESSION REPORT{userName ? ` — ${userName.toUpperCase()}` : ""}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-        <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
-          <div style={{ ...H, fontSize: "42px", color: RED }}>{avg}</div>
-          <div style={{ fontSize: "12px", color: GREY }}>Average score</div>
+    <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "16px", background: "#0d0d0d" }}>
+      <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "20px" }}>SESSION PROGRESS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ ...H, fontSize: "32px", color: WHITE }}>{history.length}</div>
+          <div style={{ fontSize: "10px", color: GREY, ...B }}>ATTEMPTS</div>
         </div>
-        <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
-          <div style={{ ...H, fontSize: "42px", color: trend > 0 ? RED : WHITE }}>{trend > 0 ? `+${trend}` : trend === 0 ? "—" : trend}</div>
-          <div style={{ fontSize: "12px", color: GREY }}>Score trend</div>
-        </div>
-      </div>
-      <div style={{ marginBottom: "20px" }}>
-        <div style={{ ...H, fontSize: "12px", color: WHITE, marginBottom: "12px" }}>ATTEMPT HISTORY</div>
-        {history.map((r, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
-            <span style={{ fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
-            <span style={{ ...H, fontSize: "18px", color: RED }}>{r.total}</span>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ ...H, fontSize: "32px", color: improvement >= 0 ? RED : WHITE }}>
+            {improvement > 0 ? `+${percentChange}%` : `${percentChange}%`}
           </div>
-        ))}
+          <div style={{ fontSize: "10px", color: GREY, ...B }}>IMPROVEMENT</div>
+        </div>
       </div>
     </div>
   );
@@ -176,100 +112,45 @@ function SessionReport({ history, userName }) {
 
 export default function PromptBattle() {
   const [screen, setScreen] = useState("home");
-  const [level, setLevel] = useState("beginner");
   const [challenge, setChallenge] = useState(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
-  const [error, setError] = useState(null);
-  const [submitCount, setSubmitCount] = useState(0);
   const [resultHistory, setResultHistory] = useState([]);
-  const [showLeadGate, setShowLeadGate] = useState(false);
-  const [leadCaptured, setLeadCaptured] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
-  const [bestScore, setBestScore] = useState(null);
 
-  const loadNewChallenge = async (lvl = "beginner") => {
-    setLevel(lvl);
+  const startBattle = async () => {
     setUserPrompt("");
     setResults(null);
-    setError(null);
-    setRetryCount(0);
-    setBestScore(null);
+    setResultHistory([]); // Reset history for a brand new game
     setScreen("generating");
-    try {
-      const c = await generateChallenge(lvl);
-      setChallenge(c);
-      setScreen("challenge");
-    } catch (e) {
-      setError("Failed to generate challenge. Try again.");
-      setScreen("home");
-    }
-  };
-
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
-    setUserPrompt("");
-    setResults(null);
-    setError(null);
+    const c = await generateChallenge();
+    setChallenge(c);
     setScreen("challenge");
   };
 
-  const handleNextChallenge = () => {
-    loadNewChallenge(level);
+  const handleRetry = () => {
+    setUserPrompt("");
+    setResults(null);
+    setScreen("challenge");
   };
 
   const submit = async () => {
     if (userPrompt.trim().length < 20) return;
     setScreen("judging");
-    try {
-      const r = await judgePrompt(challenge, userPrompt, level);
-      setResults(r);
-      if (!bestScore || r.total > bestScore) setBestScore(r.total);
-      const newCount = submitCount + 1;
-      setSubmitCount(newCount);
-      setResultHistory(prev => [...prev, r]);
-      if (newCount >= 2 && !leadCaptured) {
-        setShowLeadGate(true);
-      }
-      setScreen("results");
-    } catch {
-      setError("Connection failed. Try again.");
-      setScreen("challenge");
-    }
-  };
-
-  const handleLeadComplete = (name) => {
-    setUserName(name);
-    setLeadCaptured(true);
-    setShowLeadGate(false);
+    const r = await judgePrompt(challenge, userPrompt);
+    setResults(r);
+    setResultHistory(prev => [...prev, r]);
+    setScreen("results");
   };
 
   const wrap = (children) => (
     <div style={{ minHeight: "100vh", background: BLACK, color: WHITE, position: "relative" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: ${BLACK}; }
-        textarea:focus { outline: none; border-color: ${RED} !important; }
-        input:focus { outline: none; border-color: ${RED} !important; }
-        button:hover { opacity: 0.88; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
       <RedBar />
-      <Navigation />
       <GridBg />
-      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px", paddingTop: "80px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
-          {screen !== "home" && screen !== "generating" && screen !== "judging" && (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {submitCount > 0 && <span style={{ ...H, fontSize: "12px", color: GREY }}>{submitCount} {submitCount === 1 ? "ATTEMPT" : "ATTEMPTS"}</span>}
-              <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, fontSize: "12px", padding: "6px 14px", cursor: "pointer" }}>← HOME</button>
-            </div>
-          )}
-        </div>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "80px 20px" }}>
         {children}
       </div>
     </div>
@@ -277,83 +158,67 @@ export default function PromptBattle() {
 
   if (screen === "home") return wrap(
     <div style={{ animation: "fadeUp 0.6s ease forwards", paddingTop: "64px" }}>
-      <div style={{ fontSize: "12px", color: RED, marginBottom: "20px" }}>AI CREATOR TOOLKIT</div>
-      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95", color: WHITE }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
-      <p style={{ fontSize: "17px", color: GREY, margin: "24px 0 48px", maxWidth: "480px" }}>Test your AI prompting skills. Write prompts. Get reviewed by our expert panel. Earn your badge.</p>
-      <button onClick={() => loadNewChallenge("beginner")} style={{ background: RED, color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer", border: "none" }}>START BATTLE →</button>
+      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95" }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
+      <button onClick={startBattle} style={{ background: RED, color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer", border: "none", marginTop: "48px" }}>START BATTLE →</button>
     </div>
   );
 
-  if (screen === "generating") return wrap(
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
-      <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
-      <h2 style={{ ...H, fontSize: "36px" }}>GENERATING CHALLENGE...</h2>
-    </div>
-  );
-
-  if (screen === "challenge" && challenge) {
-    return wrap(
-      <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
-        <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
-          <div style={{ ...H, fontSize: "12px", color: RED, marginBottom: "16px" }}>YOUR CHALLENGE</div>
-          <p style={{ fontSize: "17px", color: WHITE, fontWeight: "500" }}>{challenge.scenario}</p>
-        </div>
-        <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt..." style={{ width: "100%", minHeight: "160px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", fontFamily: "'Barlow', sans-serif" }} />
-        <button onClick={submit} disabled={userPrompt.trim().length < 20} style={{ background: RED, color: WHITE, ...H, padding: "14px 32px", marginTop: "16px", cursor: "pointer", border: "none" }}>SUBMIT →</button>
-      </div>
-    );
-  }
-
-  if (screen === "judging") return wrap(
+  if (screen === "generating" || screen === "judging") return wrap(
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
       <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <h2 style={{ ...H, fontSize: "32px", marginTop: "32px" }}>JUDGING...</h2>
+      <h2 style={{ ...H, fontSize: "32px", marginTop: "32px" }}>{screen === "generating" ? "GENERATING..." : "JUDGING..."}</h2>
     </div>
   );
 
-  if (screen === "results" && results) {
-    const cfg = LEVELS[level];
-    const passed = results.total >= cfg.passMark;
+  if (screen === "challenge") return wrap(
+    <div style={{ animation: "fadeUp 0.5s ease forwards" }}>
+      <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
+        <div style={{ ...H, fontSize: "11px", color: RED, marginBottom: "16px" }}>YOUR CHALLENGE</div>
+        <p style={{ ...B, fontSize: "17px", color: WHITE }}>{challenge.scenario}</p>
+      </div>
+      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt..." style={{ width: "100%", minHeight: "160px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "15px" }} />
+      <button onClick={submit} disabled={userPrompt.trim().length < 20} style={{ background: RED, color: WHITE, ...H, padding: "14px 32px", marginTop: "16px", cursor: "pointer", border: "none" }}>SUBMIT →</button>
+    </div>
+  );
+
+  if (screen === "results") {
+    const passed = results.total >= 65;
     return wrap(
-      <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
+      <div style={{ animation: "fadeUp 0.5s ease forwards" }}>
         <div style={{ borderTop: `4px solid ${RED}`, background: "#0d0d0d", padding: "40px", textAlign: "center", marginBottom: "16px" }}>
           <div style={{ ...H, fontSize: "120px", color: passed ? RED : WHITE }}>{results.total}</div>
-          <span style={{ background: passed ? RED : "#1a1a1a", ...H, padding: "8px 20px" }}>{results.grade.toUpperCase()}</span>
+          <span style={{ background: passed ? RED : "#1a1a1a", ...H, padding: "8px 20px", fontSize: "14px" }}>{results.grade.toUpperCase()}</span>
         </div>
 
-        <div style={{ padding: "28px", border: "1px solid #1f1f1f", marginBottom: "16px" }}>
-          <ScoreBar label="CLARITY" value={results.scores.clarity} delay={0} />
-          <ScoreBar label="SPECIFICITY" value={results.scores.specificity} delay={150} />
-          <ScoreBar label="CONTEXT AWARENESS" value={results.scores.awareness} delay={300} />
-          <ScoreBar label="CRAFT & TECHNIQUE" value={results.scores.craft} delay={450} />
+        <PerformanceTracker history={resultHistory} />
+
+        <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
+          <ScoreBar label="CLARITY" value={results.scores.clarity} />
+          <ScoreBar label="SPECIFICITY" value={results.scores.specificity} delay={100} />
+          <ScoreBar label="CONTEXT" value={results.scores.awareness} delay={200} />
+          <ScoreBar label="CRAFT" value={results.scores.craft} delay={300} />
         </div>
 
         {results.rewrittenPrompt && (
           <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid #333`, padding: "28px", marginBottom: "16px" }}>
             <div style={{ ...H, fontSize: "13px", color: WHITE, marginBottom: "6px" }}>WHAT A STRONG PROMPT LOOKS LIKE</div>
-            <p style={{ fontSize: "13px", color: GREY, marginBottom: "20px" }}>{results.rewriteNote}</p>
+            <p style={{ ...B, fontSize: "13px", color: GREY, marginBottom: "20px" }}>{results.rewriteNote}</p>
             <div style={{ background: "#0f0f0f", border: "1px solid #2a2a2a", borderLeft: `3px solid ${RED}`, padding: "20px" }}>
-              <p style={{ fontSize: "15px", color: "#ddd", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>{results.rewrittenPrompt}</p>
+              <p style={{ ...B, fontSize: "15px", color: "#ddd", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>{results.rewrittenPrompt}</p>
             </div>
           </div>
         )}
 
-        {showLeadGate && <LeadGate level={level} scores={results} onComplete={handleLeadComplete} />}
-        {leadCaptured && resultHistory.length >= 2 && <SessionReport history={resultHistory} userName={userName} />}
-
         <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
-          <div style={{ fontSize: "48px" }}>{passed ? cfg.emoji : "💪"}</div>
-          <div style={{ ...H, color: passed ? RED : GREY }}>{passed ? cfg.badge : "KEEP PRACTISING"}</div>
+          <div style={{ fontSize: "48px" }}>{passed ? "🌱" : "💪"}</div>
+          <div style={{ ...H, fontSize: "13px", color: passed ? RED : GREY }}>{passed ? "ACHIEVEMENT UNLOCKED" : "KEEP PRACTISING"}</div>
+          <div style={{ ...H, fontSize: "32px", color: passed ? WHITE : "#444" }}>{passed ? "PROMPT SEEDLING" : "NOT YET..."}</div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
-          <button onClick={handleRetry} style={{ background: "transparent", border: `2px solid ${RED}`, color: RED, ...H, padding: "14px", flex: 1, cursor: "pointer" }}>↻ RETRY</button>
-          {!showLeadGate && <button onClick={handleNextChallenge} style={{ background: RED, border: "none", color: WHITE, ...H, padding: "14px", flex: 1, cursor: "pointer" }}>NEXT →</button>}
-        </div>
-        <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, padding: "14px", width: "100%", cursor: "pointer" }}>QUIT TO HOME</button>
+        <button onClick={handleRetry} style={{ background: RED, border: "none", color: WHITE, ...H, padding: "18px", width: "100%", cursor: "pointer", fontSize: "18px" }}>↻ RETRY THIS CHALLENGE</button>
+        <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, padding: "14px", width: "100%", cursor: "pointer", marginTop: "12px" }}>QUIT TO HOME</button>
       </div>
     );
   }
-
   return null;
 }
