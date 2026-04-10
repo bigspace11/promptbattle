@@ -192,7 +192,7 @@ export default function PromptBattle() {
         {/* LATEST SCORES TRACKER */}
         {history.length > 1 && (
           <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
-            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>YOUR PREVIOUS BATTLE RECORDS</div>
+            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
               {history.map((s, i) => {
                 const isCurrent = i === history.length - 1;
