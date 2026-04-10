@@ -5,12 +5,6 @@ const BLACK = "#0a0a0a";
 const WHITE = "#ffffff";
 const GREY = "#888888";
 
-const LEVELS = {
-  beginner:     { label: "BEGINNER",     emoji: "🌱", passMark: 65, badge: "PROMPT SEEDLING",     desc: "Just starting out with AI prompts" },
-  intermediate: { label: "INTERMEDIATE", emoji: "⚡", passMark: 72, badge: "PROMPT PRACTITIONER", desc: "Comfortable with the basics" },
-  advanced:     { label: "ADVANCED",     emoji: "🔥", passMark: 80, badge: "PROMPT MASTER",       desc: "Ready to go deep" }
-};
-
 const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
 
 async function callAPI(body) {
@@ -22,62 +16,57 @@ async function callAPI(body) {
   return response.json();
 }
 
-async function subscribeToMailchimp(email, name, score, level) {
+async function subscribeToMailchimp(email, name, score) {
   const response = await fetch("/api/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, name, score, level })
+    body: JSON.stringify({ email, name, score })
   });
   return response.json();
 }
 
-async function generateChallenge(level) {
+async function generateChallenge() {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
     max_tokens: 500,
-    system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
+    system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge. 
 
-BEGINNER challenges: Simple, everyday tasks. Explaining things to non-technical people, writing basic content, rewriting or improving text. Real-world relatable scenarios.
-INTERMEDIATE challenges: Tasks requiring role-play, format control, tone shifting, or multi-part outputs.
-ADVANCED challenges: Complex tasks requiring chain-of-thought, multi-step reasoning, persona architecture, self-critique loops, or framework construction.
+Challenges should be varied — draw from business, marketing, HR, tech, food, travel, or creativity. Avoid cliches like coffee mugs or WiFi explanations.
 
-Make challenges varied — draw from business, marketing, HR, education, tech, food, travel, creativity, relationships, health, finance. Never repeat the same scenario twice.
-
-Return ONLY valid JSON, no markdown, no preamble:
+Return ONLY valid JSON:
 {
   "title": "THE [2-3 WORD NAME IN CAPS]",
-  "scenario": "Clear 1-2 sentence description of exactly what the student needs to get an AI to do",
-  "hint": "Think about: [3 specific prompting considerations relevant to this challenge]",
-  "evaluationFocus": "comma-separated list of 3 prompting skills this tests"
+  "scenario": "Clear 1-2 sentence description of what the user needs the AI to do",
+  "hint": "Think about: [3 specific prompting considerations]",
+  "evaluationFocus": "3 skills this tests"
 }`,
-    messages: [{ role: "user", content: `Generate a ${level} level challenge. Be creative and unexpected — avoid coffee mugs, WiFi explanations, or water reminder apps.` }]
+    messages: [{ role: "user", content: "Generate a fresh, creative prompting challenge." }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
 
-async function judgePrompt(challenge, userPrompt, level) {
+async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
     max_tokens: 1000,
     system: `You are a senior AI trainer at BigSpaceAI. Speak in first person as a human expert.
 
-Score on the THINK Framework criteria (each 0-20, total 100):
-- Target Outcome: Did they define the desired result clearly?
-- Human Context: Did they include purpose, audience, and tone?
-- Include References: Did they provide examples or structural guides?
-- Navigate Response: Did they include instructions for the AI to assess its own output?
-- Keep Refining: Does the prompt encourage iterative improvement?
+Score on four criteria (each 0-25, total 100):
+- Clarity: Is the instruction clear and unambiguous?
+- Specificity: Does it provide enough detail and constraints?
+- Awareness: Does it show understanding of audience and context?
+- Craft: Does it use good prompting techniques?
 
 Return ONLY valid JSON:
 {
-  "scores": { "target": 0-20, "human": 0-20, "refs": 0-20, "nav": 0-20, "refine": 0-20 },
-  "scoreReasons": { "target": "...", "human": "...", "refs": "...", "nav": "...", "refine": "..." },
+  "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 },
+  "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." },
   "total": 0-100,
   "grade": "Needs Work|Getting There|Solid|Excellent|Outstanding",
   "rewrittenPrompt": "the improved version of their prompt",
   "rewriteNote": "one sentence on the key change made"
 }`,
-    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nEVALUATION FOCUS: ${challenge.evaluationFocus}\nLEVEL: ${level}\n\nSTUDENT PROMPT:\n${userPrompt}` }]
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT:\n${userPrompt}` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
@@ -92,147 +81,48 @@ const Navigation = () => (
       <img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", width: "auto", cursor: "pointer" }} />
     </a>
   </div>
- );
-
-
-
+);
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
   const [show, setShow] = useState(false);
-  
   useEffect(() => {
-    // Updated math: value / 20 * 100 because max is now 20
-    const t = setTimeout(() => { setWidth(value / 20 * 100); setShow(true); }, delay + 300);
+    const t = setTimeout(() => { setWidth((value / 25) * 100); setShow(true); }, delay + 300);
     return () => clearTimeout(t);
   }, [value, delay]);
-
   return (
     <div style={{ marginBottom: "22px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-        {/* Label now reflects THINK pillars */}
         <span style={{ ...H, fontSize: "15px", letterSpacing: "0.06em", color: "#aaa" }}>{label}</span>
-        <span style={{ ...H, fontSize: "16px", color: value >= 16 ? RED : value >= 12 ? WHITE : GREY }}>{value}/20</span>
+        <span style={{ ...H, fontSize: "16px", color: value >= 20 ? RED : WHITE }}>{value}/25</span>
       </div>
       <div style={{ background: "#1f1f1f", height: "6px", marginBottom: reason ? "10px" : "0" }}>
         <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s cubic-bezier(0.22, 1, 0.36, 1)" }} />
       </div>
-      {reason && show && (
-        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: "#888", lineHeight: "1.6", borderLeft: `2px solid #2a2a2a`, paddingLeft: "10px" }}>{reason}</p>
-      )}
+      {reason && show && <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: "#888", lineHeight: "1.6", borderLeft: `2px solid #2a2a2a`, paddingLeft: "10px" }}>{reason}</p>}
     </div>
   );
 }
 
-function LeadGate({ level, scores, onComplete }) {
+function LeadGate({ scores, onComplete }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
   const submit = async () => {
     if (!name.trim() || !email.trim() || !email.includes("@")) return;
     setLoading(true);
     try {
-      await subscribeToMailchimp(email, name, scores.total, level);
-      onComplete(name, email);
-    } catch {
-      setError("Something went wrong. Try again.");
-      setLoading(false);
-    }
+      await subscribeToMailchimp(email, name, scores.total);
+      onComplete(name);
+    } catch { setLoading(false); }
   };
-
   return (
     <div style={{ border: `2px solid ${RED}`, background: "#0d0d0d", padding: "36px", marginBottom: "16px", textAlign: "center" }}>
-      <div style={{ fontSize: "32px", marginBottom: "16px" }}>🎯</div>
-      <div style={{ ...H, fontSize: "24px", letterSpacing: "0.06em", color: WHITE, marginBottom: "12px" }}>GET YOUR FULL SESSION REPORT</div>
-      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: GREY, lineHeight: "1.7", marginBottom: "28px", maxWidth: "420px", margin: "0 auto 28px" }}>
-        You've been at it a while. Drop your details to unlock your personalised report and keep playing.
-      </p>
+      <div style={{ ...H, fontSize: "24px", color: WHITE, marginBottom: "12px" }}>GET YOUR SESSION REPORT</div>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "360px", margin: "0 auto" }}>
-        <input
-          value={name} onChange={e => setName(e.target.value)}
-          placeholder="Your name"
-          style={{ background: "#111", border: "1px solid #333", color: WHITE, fontSize: "15px", padding: "14px 16px", fontFamily: "'Barlow', sans-serif", width: "100%" }}
-        />
-        <input
-          value={email} onChange={e => setEmail(e.target.value)}
-          placeholder="Your email"
-          type="email"
-          style={{ background: "#111", border: "1px solid #333", color: WHITE, fontSize: "15px", padding: "14px 16px", fontFamily: "'Barlow', sans-serif", width: "100%" }}
-        />
-        {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>{error}</p>}
-        <button
-          onClick={submit}
-          disabled={loading || !name.trim() || !email.trim() || !email.includes("@")}
-          style={{ background: (!name.trim() || !email.trim() || !email.includes("@")) ? "#222" : RED, border: "none", color: (!name.trim() || !email.trim() || !email.includes("@")) ? "#555" : WHITE, ...H, fontSize: "16px", letterSpacing: "0.12em", padding: "16px", cursor: "pointer", width: "100%" }}
-        >
-          {loading ? "SAVING..." : "UNLOCK MY REPORT →"}
-        </button>
-        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "11px", color: "#444", marginTop: "4px" }}>No spam. Just your results and occasional AI tips from BigSpaceAI.</p>
-      </div>
-    </div>
-  );
-}
-
-function SessionReport({ history, userName }) {
-  const avg = Math.round(history.reduce((s, r) => s + r.total, 0) / history.length);
-  
-  // THINK mapping
-  const avgTarget = Math.round(history.reduce((s, r) => s + r.scores.target, 0) / history.length);
-  const avgHuman = Math.round(history.reduce((s, r) => s + r.scores.human, 0) / history.length);
-  const avgRefs = Math.round(history.reduce((s, r) => s + r.scores.refs, 0) / history.length);
-  const avgNav = Math.round(history.reduce((s, r) => s + r.scores.nav, 0) / history.length);
-  const avgRefine = Math.round(history.reduce((s, r) => s + r.scores.refine, 0) / history.length);
-
-  const skills = [
-    ["Target Outcome", avgTarget], 
-    ["Human Context", avgHuman], 
-    ["References", avgRefs], 
-    ["Navigation", avgNav], 
-    ["Refining", avgRefine]
-  ].sort((a, b) => b[1] - a[1]);
-
-  const trend = history.length > 1 ? history[history.length - 1].total - history[0].total : 0;
-
-  return (
-    <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
-      <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "20px" }}>📊 YOUR SESSION REPORT{userName ? ` — ${userName.toUpperCase()}` : ""}</div>
-      
-      {/* Average and Trend Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-        <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
-          <div style={{ ...H, fontSize: "42px", color: RED }}>{avg}</div>
-          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY }}>Average score</div>
-        </div>
-        <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
-          <div style={{ ...H, fontSize: "42px", color: trend > 0 ? RED : WHITE }}>{trend > 0 ? `+${trend}` : trend === 0 ? "—" : trend}</div>
-          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY }}>Score trend</div>
-        </div>
-      </div>
-
-      {/* List of attempts */}
-      <div style={{ marginBottom: "20px" }}>
-        <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>ATTEMPT HISTORY</div>
-        {history.map((r, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
-            <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
-            <span style={{ ...H, fontSize: "18px", color: r.total >= 70 ? RED : WHITE }}>{r.total}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Numerical breakdown only */}
-      <div style={{ background: "#111", padding: "16px 20px" }}>
-        <div style={{ ...H, fontSize: "11px", letterSpacing: "0.15em", color: WHITE, marginBottom: "10px" }}>THINK FRAMEWORK AVG.</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-          {skills.map(([name, score], i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: i === 0 ? WHITE : GREY }}>{name}</span>
-              <span style={{ ...H, fontSize: "13px", color: i === 0 ? RED : GREY }}>{score}/20</span>
-            </div>
-          ))}
-        </div>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={{ background: "#111", border: "1px solid #333", color: WHITE, padding: "14px 16px", width: "100%" }} />
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email" type="email" style={{ background: "#111", border: "1px solid #333", color: WHITE, padding: "14px 16px", width: "100%" }} />
+        <button onClick={submit} disabled={loading} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "16px", padding: "16px", cursor: "pointer" }}>{loading ? "SAVING..." : "UNLOCK MY REPORT →"}</button>
       </div>
     </div>
   );
@@ -240,74 +130,40 @@ function SessionReport({ history, userName }) {
 
 export default function PromptBattle() {
   const [screen, setScreen] = useState("home");
-  const [level, setLevel] = useState(null);
   const [challenge, setChallenge] = useState(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
-  const [error, setError] = useState(null);
-  const [submitCount, setSubmitCount] = useState(0);   // total submissions ever
+  const [submitCount, setSubmitCount] = useState(0);
   const [resultHistory, setResultHistory] = useState([]);
   const [showLeadGate, setShowLeadGate] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
   const [userName, setUserName] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
   const [bestScore, setBestScore] = useState(null);
 
-  const loadNewChallenge = async (lvl) => {
-    setLevel(lvl);
+  const startNewBattle = async () => {
     setUserPrompt("");
     setResults(null);
-    setError(null);
-    setRetryCount(0);
-    setBestScore(null);
     setScreen("generating");
     try {
-      const c = await generateChallenge(lvl);
+      const c = await generateChallenge();
       setChallenge(c);
       setScreen("challenge");
-   } catch (e) {
-        console.error("Challenge gen failed:", e);
-        setError("Failed to generate challenge. Try again.");
-        setScreen("level");
-      }
-  };
-
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
-    setUserPrompt("");
-    setResults(null);
-    setError(null);
-    setScreen("challenge");
-  };
-
-  const handleNextChallenge = () => {
-    pickChallenge(level);
+    } catch { setScreen("home"); }
   };
 
   const submit = async () => {
     if (userPrompt.trim().length < 20) return;
     setScreen("judging");
     try {
-      const r = await judgePrompt(challenge, userPrompt, level);
+      const r = await judgePrompt(challenge, userPrompt);
       setResults(r);
       if (!bestScore || r.total > bestScore) setBestScore(r.total);
       const newCount = submitCount + 1;
       setSubmitCount(newCount);
       setResultHistory(prev => [...prev, r]);
-      if (newCount >= 2 && !leadCaptured) {
-        setShowLeadGate(true);
-      }
+      if (newCount >= 2 && !leadCaptured) setShowLeadGate(true);
       setScreen("results");
-    } catch {
-      setError("Connection failed. Try again.");
-      setScreen("challenge");
-    }
-  };
-
-  const handleLeadComplete = (name) => {
-    setUserName(name);
-    setLeadCaptured(true);
-    setShowLeadGate(false);
+    } catch { setScreen("challenge"); }
   };
 
   const wrap = (children) => (
@@ -315,211 +171,84 @@ export default function PromptBattle() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: ${BLACK}; }
-        textarea:focus { outline: none; border-color: ${RED} !important; }
-        input:focus { outline: none; border-color: ${RED} !important; }
-        button:hover { opacity: 0.88; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
-     <RedBar />
-<Navigation />
-<GridBg />
-<div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "0 20px 80px", paddingTop: "80px" }}>
-
-
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
-
-          {screen !== "home" && screen !== "generating" && screen !== "judging" && (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {submitCount > 0 && (
-                <span style={{ ...H, fontSize: "12px", color: GREY, letterSpacing: "0.1em" }}>
-                  {submitCount} {submitCount === 1 ? "ATTEMPT" : "ATTEMPTS"}
-                </span>
-              )}
-              <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, fontFamily: "'Barlow', sans-serif", fontSize: "12px", padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>← HOME</button>
-            </div>
-          )}
-        </div>
+      <RedBar /><Navigation /><GridBg />
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "80px 20px" }}>
+        {screen !== "home" && screen !== "generating" && screen !== "judging" && (
+          <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "12px", padding: "6px 14px", cursor: "pointer", marginBottom: "20px" }}>← HOME</button>
+        )}
         {children}
       </div>
     </div>
   );
 
   if (screen === "home") return wrap(
-    <div style={{ animation: "fadeUp 0.6s ease forwards", paddingTop: "64px" }}>
-      <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", letterSpacing: "0.25em", color: RED, textTransform: "uppercase", marginBottom: "20px" }}>AI CREATOR TOOLKIT</div>
-      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95", marginBottom: "8px", color: WHITE }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
+    <div style={{ animation: "fadeUp 0.6s ease", paddingTop: "64px" }}>
+      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95", color: WHITE }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
       <div style={{ width: "60px", height: "4px", background: RED, margin: "24px 0" }} />
-      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", lineHeight: "1.7", color: GREY, maxWidth: "480px", marginBottom: "48px" }}>Test your AI prompting skills. Write prompts. Get reviewed by our expert panel. Earn your badge.</p>
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "52px" }}>
-        {["✍️ WRITE A PROMPT", "🔬 EXPERTS ANALYSE IT", "📊 GET SCORED", "🏆 EARN A BADGE"].map((s, i) => (
-          <div key={i} style={{ border: "1px solid #222", padding: "8px 14px", ...H, fontSize: "12px", letterSpacing: "0.1em", color: GREY }}>{s}</div>
-        ))}
-      </div>
-      <button onClick={() => {
-        setSubmitCount(0);
-        setResultHistory([]);
-        setLeadCaptured(false);
-        setUserName("");
-        setShowLeadGate(false);
-        setRetryCount(0);
-        setBestScore(null);
-        setScreen("level");
-      }} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", letterSpacing: "0.12em", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
-      <div style={{ marginTop: "64px", borderTop: "1px solid #1a1a1a", paddingTop: "24px" }}>
-        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: "#444", letterSpacing: "0.05em" }}>Part of the BigSpaceAI AI Prompting Essentials course</p>
-      </div>
-    </div>
-  );
-
-  if (screen === "level") return wrap(
-    <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "48px" }}>
-      <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", letterSpacing: "0.25em", color: RED, textTransform: "uppercase", marginBottom: "16px" }}>SELECT DIFFICULTY</div>
-      <h2 style={{ ...H, fontSize: "clamp(42px, 9vw, 64px)", lineHeight: "1", marginBottom: "8px" }}>HOW CONFIDENT<br />ARE YOU?</h2>
-      <div style={{ width: "40px", height: "4px", background: RED, marginBottom: "40px" }} />
-      {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "14px", marginBottom: "20px" }}>{error}</p>}
-      {Object.entries(LEVELS).map(([key, cfg], i) => (
-        <button key={key} onClick={() => loadNewChallenge(key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "transparent", border: "1px solid #222", borderLeft: `4px solid ${i === 0 ? "#333" : i === 1 ? "#555" : RED}`, padding: "24px 28px", marginBottom: "12px", cursor: "pointer", textAlign: "left" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#111"; e.currentTarget.style.borderLeftColor = RED; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = i === 0 ? "#333" : i === 1 ? "#555" : RED; }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-              <span style={{ fontSize: "22px" }}>{cfg.emoji}</span>
-              <span style={{ ...H, fontSize: "26px", letterSpacing: "0.06em", color: WHITE }}>{cfg.label}</span>
-            </div>
-            <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>{cfg.desc} · Pass mark: {cfg.passMark}/100</div>
-          </div>
-          <span style={{ color: RED, fontSize: "28px", ...H }}>→</span>
-        </button>
-      ))}
+      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", color: GREY, marginBottom: "48px" }}>Test your AI prompting skills. Write prompts. Get scored. Earn your badge.</p>
+      <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
     </div>
   );
 
   if (screen === "generating") return wrap(
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
-      <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
-      <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em", marginBottom: "16px" }}>GENERATING CHALLENGE...</h2>
-      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Creating a fresh challenge just for you</p>
+    <div style={{ textAlign: "center", paddingTop: "100px" }}>
+      <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 32px" }} />
+      <h2 style={{ ...H, fontSize: "36px" }}>GENERATING CHALLENGE...</h2>
     </div>
   );
 
-  if (screen === "challenge" && challenge) {
-    const cfg = LEVELS[level];
-    return wrap(
-      <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
-        {retryCount > 0 && bestScore && (
-          <div style={{ background: "#111", border: "1px solid #222", borderLeft: `4px solid ${RED}`, padding: "12px 20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Attempt {retryCount + 1} · Best score so far</span>
-            <span style={{ ...H, fontSize: "22px", color: RED }}>{bestScore}</span>
-          </div>
-        )}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "32px" }}>
-          <span style={{ background: RED, ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, padding: "4px 12px" }}>{cfg.emoji} {cfg.label}</span>
-          <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, letterSpacing: "0.08em", textTransform: "uppercase" }}>{challenge.title}</span>
-        </div>
-        <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
-          <div style={{ ...H, fontSize: "12px", letterSpacing: "0.2em", color: RED, marginBottom: "16px" }}>YOUR CHALLENGE</div>
-          <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", lineHeight: "1.75", color: WHITE, marginBottom: "24px", fontWeight: "500" }}>{challenge.scenario}</p>
-          <div style={{ background: "#111", borderLeft: `3px solid ${RED}`, padding: "14px 18px" }}>
-            <div style={{ ...H, fontSize: "11px", letterSpacing: "0.2em", color: RED, marginBottom: "6px" }}>HINT</div>
-            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY, lineHeight: "1.7" }}>{challenge.hint}</p>
-          </div>
-        </div>
-        <div style={{ border: "1px solid #222", padding: "28px", marginBottom: "20px" }}>
-          <div style={{ ...H, fontSize: "12px", letterSpacing: "0.2em", color: RED, marginBottom: "16px" }}>WRITE YOUR PROMPT</div>
-          <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt here. Be specific, set context, define the output format..." style={{ width: "100%", minHeight: "160px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, fontSize: "15px", lineHeight: "1.7", padding: "16px", fontFamily: "'Barlow', sans-serif", resize: "vertical" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px" }}>
-            <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: userPrompt.length < 20 ? RED : "#555" }}>{userPrompt.length < 20 ? `${20 - userPrompt.length} more chars needed` : `${userPrompt.length} characters`}</span>
-            <button onClick={submit} disabled={userPrompt.trim().length < 20} style={{ background: userPrompt.trim().length < 20 ? "#222" : RED, border: "none", color: userPrompt.trim().length < 20 ? "#555" : WHITE, ...H, fontSize: "16px", letterSpacing: "0.12em", padding: "14px 32px", cursor: userPrompt.trim().length < 20 ? "not-allowed" : "pointer" }}>SUBMIT FOR REVIEW →</button>
-          </div>
-          {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "13px", marginTop: "12px" }}>{error}</p>}
-        </div>
-        <button onClick={() => loadNewChallenge(level)} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "13px", letterSpacing: "0.1em", padding: "10px 20px", cursor: "pointer" }}>↻ GENERATE NEW CHALLENGE</button>
+  if (screen === "judging") return wrap(
+    <div style={{ textAlign: "center", paddingTop: "100px" }}>
+      <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 32px" }} />
+      <h2 style={{ ...H, fontSize: "36px", marginBottom: "16px" }}>SCORING YOUR PROMPT...</h2>
+      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+        {["CLARITY", "SPECIFICITY", "AWARENESS", "CRAFT"].map((c, i) => (
+          <span key={i} style={{ ...H, fontSize: "13px", color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite` }}>{c} ·</span>
+        ))}
       </div>
-    );
-  }
-
- if (screen === "judging") return wrap(
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
-    <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
-    <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em", marginBottom: "16px" }}>APPLYING THINK FRAMEWORK...</h2>
-    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-      {/* Updated to your 5 THINK Pillars */}
-      {["TARGET OUTCOME", "HUMAN CONTEXT", "INCLUDE REFERENCES", "NAVIGATE RESPONSE", "KEEP REFINING"].map((c, i) => (
-        <span key={i} style={{ ...H, fontSize: "13px", letterSpacing: "0.15em", color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite` }}>{c} ·</span>
-      ))}
     </div>
-  </div>
-);
+  );
 
-  if (screen === "results" && results) {
-    const cfg = LEVELS[level];
-    const passed = results.total >= cfg.passMark;
-    return wrap(
-      <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
-        <div style={{ borderTop: `4px solid ${RED}`, background: "#0d0d0d", padding: "40px", marginBottom: "16px", textAlign: "center" }}>
-          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.25em", color: GREY, marginBottom: "16px" }}>
-            {retryCount > 0 ? `ATTEMPT ${retryCount + 1} · BEST: ${bestScore}` : "YOUR SCORE"}
-          </div>
-          <div style={{ ...H, fontSize: "clamp(80px, 20vw, 120px)", lineHeight: "1", color: passed ? RED : WHITE, marginBottom: "8px" }}>{results.total}</div>
-          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY, marginBottom: "20px" }}>out of 100 · Pass mark: {cfg.passMark}</div>
-          <span style={{ background: passed ? RED : "#1a1a1a", border: `1px solid ${passed ? RED : "#333"}`, ...H, fontSize: "16px", letterSpacing: "0.15em", color: WHITE, padding: "8px 20px" }}>{results.grade.toUpperCase()}</span>
+  if (screen === "challenge") return wrap(
+    <div style={{ animation: "fadeUp 0.5s ease" }}>
+      <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
+        <div style={{ ...H, fontSize: "12px", color: RED, marginBottom: "16px" }}>{challenge.title}</div>
+        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", color: WHITE, marginBottom: "24px" }}>{challenge.scenario}</p>
+        <div style={{ background: "#111", padding: "14px 18px", borderLeft: `3px solid ${RED}` }}>
+          <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>{challenge.hint}</p>
         </div>
-
-        <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
-          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "24px" }}>SCORE BREAKDOWN</div>
-          <ScoreBar label="TARGET OUTCOME" value={results.scores.target} reason={results.scoreReasons?.target} delay={0} />
-  
-  <ScoreBar label="HUMAN CONTEXT" value={results.scores.human} reason={results.scoreReasons?.human} delay={150} />
-  
-  <ScoreBar label="INCLUDE REFERENCES" value={results.scores.refs} reason={results.scoreReasons?.refs} delay={300} />
-  
-  <ScoreBar label="NAVIGATE RESPONSE" value={results.scores.nav} reason={results.scoreReasons?.nav} delay={450} />
-
-  <ScoreBar label="KEEP REFINING" value={results.scores.refine} reason={results.scoreReasons?.refine} delay={600} />
-</div>
-
-        
-
-        {results.rewrittenPrompt && (
-          <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid #333`, padding: "28px", marginBottom: "16px" }}>
-            <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: WHITE, marginBottom: "6px" }}>WHAT A STRONG PROMPT LOOKS LIKE</div>
-            <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY, marginBottom: "20px" }}>{results.rewriteNote}</p>
-            <div style={{ background: "#0f0f0f", border: "1px solid #2a2a2a", borderLeft: `3px solid ${RED}`, padding: "20px" }}>
-              <div style={{ ...H, fontSize: "10px", letterSpacing: "0.2em", color: RED, marginBottom: "12px" }}>REWRITTEN VERSION</div>
-              <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "15px", color: "#ddd", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>{results.rewrittenPrompt}</p>
-            </div>
-          </div>
-        )}
-
-        {showLeadGate && (
-          <LeadGate level={level} scores={results} onComplete={handleLeadComplete} />
-        )}
-
-        {leadCaptured && resultHistory.length >= 2 && (
-          <SessionReport history={resultHistory} userName={userName} />
-        )}
-
-        <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "12px" }}>{passed ? cfg.emoji : "💪"}</div>
-          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.25em", color: passed ? RED : GREY, marginBottom: "8px" }}>{passed ? "ACHIEVEMENT UNLOCKED" : "KEEP PRACTISING"}</div>
-          <div style={{ ...H, fontSize: "32px", letterSpacing: "0.06em", color: passed ? WHITE : "#444", marginBottom: "8px" }}>{passed ? cfg.badge : "NOT YET..."}</div>
-          {passed && <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "13px", color: GREY }}>BigSpaceAI Certified · {new Date().toLocaleDateString("en-SG", { month: "short", year: "numeric" })}</div>}
-        </div>
-
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "12px" }}>
-          <button onClick={handleRetry} style={{ background: "transparent", border: `2px solid ${RED}`, color: RED, ...H, fontSize: "16px", letterSpacing: "0.12em", padding: "14px 24px", cursor: "pointer", flex: 1 }}>↻ RETRY THIS CHALLENGE</button>
-          {!showLeadGate && <button onClick={handleNextChallenge} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "16px", letterSpacing: "0.12em", padding: "14px 24px", cursor: "pointer", flex: 1 }}>NEXT CHALLENGE →</button>}
-        </div>
-        <button onClick={() => setScreen("level")} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "15px", letterSpacing: "0.12em", padding: "14px", cursor: "pointer", width: "100%" }}>CHANGE LEVEL</button>
-
-        <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: "#333", textAlign: "center", marginTop: "24px", letterSpacing: "0.05em" }}>LEARN MORE AT BIGSPACEAI.COM</p>
       </div>
-    );
-  }
+      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt here..." style={{ width: "100%", height: "160px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", fontFamily: "'Barlow', sans-serif" }} />
+      <button onClick={submit} disabled={userPrompt.length < 20} style={{ background: userPrompt.length < 20 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "16px", padding: "14px 32px", marginTop: "16px", cursor: "pointer" }}>SUBMIT FOR REVIEW →</button>
+    </div>
+  );
+
+  if (screen === "results") return wrap(
+    <div style={{ animation: "fadeUp 0.5s ease" }}>
+      <div style={{ background: "#0d0d0d", padding: "40px", textAlign: "center", borderTop: `4px solid ${RED}`, marginBottom: "16px" }}>
+        <div style={{ ...H, fontSize: "100px", color: RED }}>{results.total}</div>
+        <div style={{ ...H, fontSize: "20px" }}>{results.grade.toUpperCase()}</div>
+      </div>
+      <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
+        <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons?.clarity} />
+        <ScoreBar label="SPECIFICITY" value={results.scores.specificity} reason={results.scoreReasons?.specificity} delay={150} />
+        <ScoreBar label="AWARENESS" value={results.scores.awareness} reason={results.scoreReasons?.awareness} delay={300} />
+        <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
+      </div>
+      {results.rewrittenPrompt && (
+        <div style={{ background: "#0f0f0f", padding: "20px", borderLeft: `3px solid ${RED}`, marginBottom: "16px" }}>
+          <div style={{ ...H, fontSize: "12px", color: RED, marginBottom: "8px" }}>PRO TIP: REWRITTEN VERSION</div>
+          <p style={{ fontSize: "14px", color: "#ddd", whiteSpace: "pre-wrap" }}>{results.rewrittenPrompt}</p>
+        </div>
+      )}
+      {showLeadGate && <LeadGate scores={results} onComplete={(name) => { setUserName(name); setLeadCaptured(true); setShowLeadGate(false); }} />}
+      <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "18px", width: "100%", cursor: "pointer" }}>NEXT CHALLENGE →</button>
+    </div>
+  );
 
   return null;
 }
