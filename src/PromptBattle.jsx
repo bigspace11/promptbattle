@@ -10,34 +10,53 @@ const B = { fontFamily: "'Barlow', sans-serif" };
 
 const BEGINNER_CHALLENGES = [
   {
+    id: 1,
     title: "THE EXPLAINER",
     scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.",
     hint: "Think about: who is the audience? What do they already know? What analogies might help?",
     evaluationFocus: "clarity, audience awareness, use of analogy"
   },
   {
+    id: 2,
     title: "THE PRODUCT PITCH",
     scenario: "Write a compelling product description for a plain white coffee mug.",
     hint: "Think about: tone, sensory details, emotional appeal, who buys mugs and why?",
     evaluationFocus: "creativity, persuasion, specificity"
   },
   {
+    id: 3,
     title: "THE REWRITER",
     scenario: "Rewrite this boring sentence to make it exciting: 'The meeting is on Tuesday at 3pm.'",
     hint: "Think about: energy, context, what makes people actually want to show up?",
     evaluationFocus: "creativity, transformation, voice"
   },
   {
+    id: 4,
     title: "THE POLITE DECLINE",
     scenario: "Write a polite but firm email to a friend declining an invitation to their weekend party because you need to rest.",
     hint: "Think about: maintaining the friendship while being clear about your boundaries.",
     evaluationFocus: "tone, empathy, clarity"
   },
   {
+    id: 5,
     title: "THE RECIPE MAKER",
     scenario: "Ask an AI to give you a dinner recipe using only eggs, spinach, and a piece of bread.",
     hint: "Think about: providing clear constraints so the AI doesn't suggest extra ingredients you don't have.",
     evaluationFocus: "specificity, constraint-setting"
+  },
+  {
+    id: 6,
+    title: "THE TRAVEL GUIDE",
+    scenario: "You have 4 hours in London. Ask the AI for a walking route that sees 3 major landmarks and ends at a great pub.",
+    hint: "Think about: time management, starting location, and specific interests.",
+    evaluationFocus: "logistics, clarity, constraints"
+  },
+  {
+    id: 7,
+    title: "THE INSTA-CAPTION",
+    scenario: "Write a short, witty Instagram caption for a photo of a very messy desk titled 'Productivity'.",
+    hint: "Think about: irony, brevity, and target audience.",
+    evaluationFocus: "tone, humor, impact"
   }
 ];
 
@@ -92,14 +111,26 @@ export default function PromptBattle() {
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
   const [history, setHistory] = useState([]);
+  const [seenIds, setSeenIds] = useState([]);
 
   const startNewBattle = () => {
     setUserPrompt("");
     setResults(null);
     setScreen("generating");
+
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * BEGINNER_CHALLENGES.length);
-      setChallenge(BEGINNER_CHALLENGES[randomIndex]);
+      // Filter out challenges already seen in this session
+      let available = BEGINNER_CHALLENGES.filter(c => !seenIds.includes(c.id));
+      
+      // If all challenges have been seen, reset the list
+      if (available.length === 0) {
+        available = BEGINNER_CHALLENGES;
+        setSeenIds([]);
+      }
+
+      const selected = available[Math.floor(Math.random() * available.length)];
+      setChallenge(selected);
+      setSeenIds(prev => [...prev, selected.id]);
       setScreen("challenge");
     }, 800);
   };
@@ -110,7 +141,6 @@ export default function PromptBattle() {
     try {
       const r = await judgePrompt(challenge, userPrompt);
       setResults(r);
-      // History Logic: Add to end, keep last 5 (Left-to-Right Progress)
       setHistory(prev => {
         const newHistory = [...prev, r.total];
         return newHistory.slice(-5);
@@ -142,7 +172,7 @@ export default function PromptBattle() {
   if (screen === "home") return wrap(
     <div style={{ animation: "fadeUp 0.6s ease" }}>
       <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95" }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
-      <p style={{ ...B, fontSize: "17px", color: GREY, margin: "24px 0 48px" }}>Test your AI prompting skills on beginner tasks. Get audited. Earn your badge.</p>
+      <p style={{ ...B, fontSize: "17px", color: GREY, margin: "24px 0 48px" }}>Test your AI prompting skills. Unique beginner tasks. Get audited. Earn your badge.</p>
       <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
     </div>
   );
@@ -150,7 +180,7 @@ export default function PromptBattle() {
   if (screen === "generating") return wrap(
     <div style={{ textAlign: "center", paddingTop: "60px" }}>
       <div style={{ width: "64px", height: "64px", border: "4px solid #222", borderTopColor: RED, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 32px" }} />
-      <h2 style={{ ...H, fontSize: "32px" }}>SELECTING TASK...</h2>
+      <h2 style={{ ...H, fontSize: "32px" }}>FETCHING NEW TASK...</h2>
     </div>
   );
 
@@ -192,7 +222,7 @@ export default function PromptBattle() {
         {/* LATEST SCORES TRACKER */}
         {history.length > 1 && (
           <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
-            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
+            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>LATEST SCORES</div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
               {history.map((s, i) => {
                 const isCurrent = i === history.length - 1;
