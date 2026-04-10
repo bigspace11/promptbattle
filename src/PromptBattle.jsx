@@ -1,8 +1,3 @@
-The reason the quiz felt repetitive is that the state wasn't being fully reset and the randomizer needed a more robust trigger. I have also updated the loading text to "PROMPT BATTLE IS JUDGING..." as requested and fixed the flow so it transitions correctly.
-
-Here is the updated script:
-
-```javascript
 import { useState, useEffect } from "react";
 
 const RED = "#eb1d25";
@@ -162,4 +157,3 @@ export default function PromptBattle() {
 
   return null;
 }
-```
