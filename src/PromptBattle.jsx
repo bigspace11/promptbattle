@@ -8,7 +8,6 @@ const GREY = "#888888";
 const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
 const B = { fontFamily: "'Barlow', sans-serif" };
 
-// HARD-CODED BEGINNER CHALLENGES
 const BEGINNER_CHALLENGES = [
   {
     title: "THE EXPLAINER",
@@ -98,8 +97,6 @@ export default function PromptBattle() {
     setUserPrompt("");
     setResults(null);
     setScreen("generating");
-    
-    // Pick a random beginner challenge from the list
     setTimeout(() => {
       const randomIndex = Math.floor(Math.random() * BEGINNER_CHALLENGES.length);
       setChallenge(BEGINNER_CHALLENGES[randomIndex]);
@@ -113,7 +110,11 @@ export default function PromptBattle() {
     try {
       const r = await judgePrompt(challenge, userPrompt);
       setResults(r);
-      setHistory(prev => [r.total, ...prev].slice(0, 5));
+      // History Logic: Add to end, keep last 5 (Left-to-Right Progress)
+      setHistory(prev => {
+        const newHistory = [...prev, r.total];
+        return newHistory.slice(-5);
+      });
       setScreen("results");
     } catch { setScreen("challenge"); }
   };
@@ -188,14 +189,29 @@ export default function PromptBattle() {
           <div style={{ ...H, fontSize: "24px" }}>{results.grade.toUpperCase()}</div>
         </div>
 
-        {/* SCORE HISTORY */}
+        {/* LATEST SCORES TRACKER */}
         {history.length > 1 && (
           <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
-            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px" }}>LAST 5 ATTEMPTS</div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {history.map((s, i) => (
-                <div key={i} style={{ flex: 1, background: i === 0 ? RED : "#222", color: WHITE, padding: "8px", textAlign: "center", ...H, fontSize: "18px" }}>{s}</div>
-              ))}
+            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>YOUR PREVIOUS BATTLE RECORDS</div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+              {history.map((s, i) => {
+                const isCurrent = i === history.length - 1;
+                return (
+                  <div key={i} style={{ 
+                    flex: 1, 
+                    maxWidth: "60px",
+                    background: isCurrent ? RED : "#222", 
+                    color: isCurrent ? WHITE : "#555", 
+                    padding: "10px 0", 
+                    textAlign: "center", 
+                    ...H, 
+                    fontSize: "20px",
+                    border: isCurrent ? "none" : "1px solid #333"
+                  }}>
+                    {s}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
