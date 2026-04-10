@@ -7,8 +7,7 @@ const GREY = "#888888";
 
 const LEVELS = {
   beginner:     { label: "BEGINNER",     emoji: "🌱", passMark: 65, badge: "PROMPT SEEDLING",     desc: "Just starting out with AI prompts" },
-  intermediate: { label: "INTERMEDIATE", emoji: "⚡", passMark: 72, badge: "PROMPT PRACTITIONER", desc: "Comfortable with the basics" },
-  advanced:     { label: "ADVANCED",     emoji: "🔥", passMark: 80, badge: "PROMPT MASTER",       desc: "Ready to go deep" }
+  
 };
 
 const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
@@ -38,8 +37,7 @@ async function generateChallenge(level) {
     system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
 
 BEGINNER challenges: Simple, everyday tasks. Explaining things to non-technical people, writing basic content, rewriting or improving text. Real-world relatable scenarios.
-INTERMEDIATE challenges: Tasks requiring role-play, format control, tone shifting, or multi-part outputs.
-ADVANCED challenges: Complex tasks requiring chain-of-thought, multi-step reasoning, persona architecture, self-critique loops, or framework construction.
+
 
 Make challenges varied — draw from business, marketing, HR, education, tech, food, travel, creativity, relationships, health, finance. Never repeat the same scenario twice.
 
@@ -61,17 +59,15 @@ async function judgePrompt(challenge, userPrompt, level) {
     max_tokens: 1000,
     system: `You are a senior AI trainer at BigSpaceAI. Speak in first person as a human expert.
 
-Score on the THINK Framework criteria (each 0-20, total 100):
-- Target Outcome: Did they define the desired result clearly?
-- Human Context: Did they include purpose, audience, and tone?
-- Include References: Did they provide examples or structural guides?
-- Navigate Response: Did they include instructions for the AI to assess its own output?
-- Keep Refining: Does the prompt encourage iterative improvement?
+Score on four criteria (each 0-25):
+- Clarity: Is the instruction clear and unambiguous?
+- Specificity: Does it provide enough detail and constraints?
+- Awareness: Does it show understanding of audience and context?
+- Craft: Does it use good prompting techniques?
 
 Return ONLY valid JSON:
 {
-  "scores": { "target": 0-20, "human": 0-20, "refs": 0-20, "nav": 0-20, "refine": 0-20 },
-  "scoreReasons": { "target": "...", "human": "...", "refs": "...", "nav": "...", "refine": "..." },
+ "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, notes
   "total": 0-100,
   "grade": "Needs Work|Getting There|Solid|Excellent|Outstanding",
   "rewrittenPrompt": "the improved version of their prompt",
@@ -108,11 +104,11 @@ function ScoreBar({ label, value, reason, delay = 0 }) {
   }, [value, delay]);
 
   return (
-    <div style={{ marginBottom: "22px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-        {/* Label now reflects THINK pillars */}
-        <span style={{ ...H, fontSize: "15px", letterSpacing: "0.06em", color: "#aaa" }}>{label}</span>
-        <span style={{ ...H, fontSize: "16px", color: value >= 16 ? RED : value >= 12 ? WHITE : GREY }}>{value}/20</span>
+    return (
+    <div style={{ marginBottom: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "13px", letterSpacing: "0.12em", color: GREY }}>{label}</span>
+        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: "14px", color: value >= 20 ? RED : value >= 15 ? WHITE : GREY }}>{value}/25</span>
       </div>
       <div style={{ background: "#1f1f1f", height: "6px", marginBottom: reason ? "10px" : "0" }}>
         <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s cubic-bezier(0.22, 1, 0.36, 1)" }} />
@@ -442,18 +438,27 @@ export default function PromptBattle() {
     );
   }
 
- if (screen === "judging") return wrap(
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
-    <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
-    <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em", marginBottom: "16px" }}>APPLYING THINK FRAMEWORK...</h2>
-    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-      {/* Updated to your 5 THINK Pillars */}
-      {["TARGET OUTCOME", "HUMAN CONTEXT", "INCLUDE REFERENCES", "NAVIGATE RESPONSE", "KEEP REFINING"].map((c, i) => (
-        <span key={i} style={{ ...H, fontSize: "13px", letterSpacing: "0.15em", color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite` }}>{c} ·</span>
-      ))}
+ // JUDGING
+  if (screen === "judging") return wrap(
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
+      <div style={{
+        width: "64px", height: "64px", border: `3px solid #222`,
+        borderTop: `3px solid ${RED}`, borderRadius: "50%",
+        animation: "spin 0.8s linear infinite", marginBottom: "32px"
+      }} />
+      <h2 style={{ fontFamily: "'Anton', sans-serif", fontSize: "32px", letterSpacing: "0.08em", marginBottom: "16px" }}>
+        CLAUDE IS JUDGING...
+      </h2>
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+        {["CLARITY", "SPECIFICITY", "AWARENESS", "CRAFT"].map((c, i) => (
+          <span key={i} style={{
+            fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.15em",
+            color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite`
+          }}>{c} ·</span>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
 
   if (screen === "results" && results) {
     const cfg = LEVELS[level];
@@ -469,18 +474,17 @@ export default function PromptBattle() {
           <span style={{ background: passed ? RED : "#1a1a1a", border: `1px solid ${passed ? RED : "#333"}`, ...H, fontSize: "16px", letterSpacing: "0.15em", color: WHITE, padding: "8px 20px" }}>{results.grade.toUpperCase()}</span>
         </div>
 
+      
         <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
-          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "24px" }}>SCORE BREAKDOWN</div>
-          <ScoreBar label="TARGET OUTCOME" value={results.scores.target} reason={results.scoreReasons?.target} delay={0} />
-  
-  <ScoreBar label="HUMAN CONTEXT" value={results.scores.human} reason={results.scoreReasons?.human} delay={150} />
-  
-  <ScoreBar label="INCLUDE REFERENCES" value={results.scores.refs} reason={results.scoreReasons?.refs} delay={300} />
-  
-  <ScoreBar label="NAVIGATE RESPONSE" value={results.scores.nav} reason={results.scoreReasons?.nav} delay={450} />
+          <div style={{ fontFamily: "'Anton', sans-serif", fontSize: "11px", letterSpacing: "0.2em", color: RED, marginBottom: "24px" }}>
+            SCORE BREAKDOWN
+          </div>
+          <ScoreBar label="CLARITY" value={results.scores.clarity} delay={0} />
+          <ScoreBar label="SPECIFICITY" value={results.scores.specificity} delay={150} />
+          <ScoreBar label="CONTEXT AWARENESS" value={results.scores.awareness} delay={300} />
+          <ScoreBar label="CRAFT & TECHNIQUE" value={results.scores.craft} delay={450} />
+        </div>
 
-  <ScoreBar label="KEEP REFINING" value={results.scores.refine} reason={results.scoreReasons?.refine} delay={600} />
-</div>
 
         
 
