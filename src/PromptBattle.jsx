@@ -33,11 +33,7 @@ async function generateChallenge(level) {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
     max_tokens: 500,
-    system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge appropriate for the difficulty level.
-
-BEGINNER challenges: Simple, everyday tasks. Explaining things to non-technical people, writing basic content, rewriting or improving text. Real-world relatable scenarios.
-
-Make challenges varied — draw from business, marketing, HR, education, tech, food, travel, creativity, relationships, health, finance. Never repeat the same scenario twice.
+    system: `You are a creative challenge designer for an AI prompting skills game called Prompt Battle by BigSpaceAI. Generate a single unique, practical, and interesting prompting challenge. Draw from business, marketing, HR, education, tech, food, travel, creativity, relationships, health, finance.
 
 Return ONLY valid JSON, no markdown, no preamble:
 {
@@ -46,7 +42,7 @@ Return ONLY valid JSON, no markdown, no preamble:
   "hint": "Think about: [3 specific prompting considerations relevant to this challenge]",
   "evaluationFocus": "comma-separated list of 3 prompting skills this tests"
 }`,
-    messages: [{ role: "user", content: `Generate a ${level} level challenge. Be creative and unexpected — avoid coffee mugs, WiFi explanations, or water reminder apps.` }]
+    messages: [{ role: "user", content: `Generate a beginner level challenge. Be creative and unexpected.` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
@@ -139,25 +135,10 @@ function LeadGate({ level, scores, onComplete }) {
         You've been at it a while. Drop your details to unlock your personalised report and keep playing.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "360px", margin: "0 auto" }}>
-        <input
-          value={name} onChange={e => setName(e.target.value)}
-          placeholder="Your name"
-          style={{ background: "#111", border: "1px solid #333", color: WHITE, fontSize: "15px", padding: "14px 16px", fontFamily: "'Barlow', sans-serif", width: "100%" }}
-        />
-        <input
-          value={email} onChange={e => setEmail(e.target.value)}
-          placeholder="Your email"
-          type="email"
-          style={{ background: "#111", border: "1px solid #333", color: WHITE, fontSize: "15px", padding: "14px 16px", fontFamily: "'Barlow', sans-serif", width: "100%" }}
-        />
-        {error && <p style={{ color: RED, fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>{error}</p>}
-        <button
-          onClick={submit}
-          disabled={loading || !name.trim() || !email.trim() || !email.includes("@")}
-          style={{ background: (!name.trim() || !email.trim() || !email.includes("@")) ? "#222" : RED, border: "none", color: (!name.trim() || !email.trim() || !email.includes("@")) ? "#555" : WHITE, ...H, fontSize: "16px", letterSpacing: "0.12em", padding: "16px", cursor: "pointer", width: "100%" }}
-        >
-          {loading ? "SAVING..." : "UNLOCK MY REPORT →"}
-        </button>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={{ background: "#111", border: "1px solid #333", color: WHITE, padding: "14px", width: "100%" }} />
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email" type="email" style={{ background: "#111", border: "1px solid #333", color: WHITE, padding: "14px", width: "100%" }} />
+        {error && <p style={{ color: RED, fontSize: "13px" }}>{error}</p>}
+        <button onClick={submit} disabled={loading || !name.trim() || !email.trim()} style={{ background: RED, color: WHITE, ...H, padding: "16px", cursor: "pointer" }}>UNLOCK MY REPORT →</button>
       </div>
     </div>
   );
@@ -170,24 +151,22 @@ function SessionReport({ history, userName }) {
   return (
     <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
       <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "20px" }}>📊 YOUR SESSION REPORT{userName ? ` — ${userName.toUpperCase()}` : ""}</div>
-      
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
         <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
           <div style={{ ...H, fontSize: "42px", color: RED }}>{avg}</div>
-          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY }}>Average score</div>
+          <div style={{ fontSize: "12px", color: GREY }}>Average score</div>
         </div>
         <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
           <div style={{ ...H, fontSize: "42px", color: trend > 0 ? RED : WHITE }}>{trend > 0 ? `+${trend}` : trend === 0 ? "—" : trend}</div>
-          <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", color: GREY }}>Score trend</div>
+          <div style={{ fontSize: "12px", color: GREY }}>Score trend</div>
         </div>
       </div>
-
       <div style={{ marginBottom: "20px" }}>
-        <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>ATTEMPT HISTORY</div>
+        <div style={{ ...H, fontSize: "12px", color: WHITE, marginBottom: "12px" }}>ATTEMPT HISTORY</div>
         {history.map((r, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
-            <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
-            <span style={{ ...H, fontSize: "18px", color: r.total >= 65 ? RED : WHITE }}>{r.total}</span>
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
+            <span style={{ fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
+            <span style={{ ...H, fontSize: "18px", color: RED }}>{r.total}</span>
           </div>
         ))}
       </div>
@@ -197,7 +176,7 @@ function SessionReport({ history, userName }) {
 
 export default function PromptBattle() {
   const [screen, setScreen] = useState("home");
-  const [level, setLevel] = useState(null);
+  const [level, setLevel] = useState("beginner");
   const [challenge, setChallenge] = useState(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
@@ -210,7 +189,7 @@ export default function PromptBattle() {
   const [retryCount, setRetryCount] = useState(0);
   const [bestScore, setBestScore] = useState(null);
 
-  const loadNewChallenge = async (lvl) => {
+  const loadNewChallenge = async (lvl = "beginner") => {
     setLevel(lvl);
     setUserPrompt("");
     setResults(null);
@@ -224,7 +203,7 @@ export default function PromptBattle() {
       setScreen("challenge");
     } catch (e) {
       setError("Failed to generate challenge. Try again.");
-      setScreen("level");
+      setScreen("home");
     }
   };
 
@@ -286,12 +265,8 @@ export default function PromptBattle() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 0" }}>
           {screen !== "home" && screen !== "generating" && screen !== "judging" && (
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {submitCount > 0 && (
-                <span style={{ ...H, fontSize: "12px", color: GREY, letterSpacing: "0.1em" }}>
-                  {submitCount} {submitCount === 1 ? "ATTEMPT" : "ATTEMPTS"}
-                </span>
-              )}
-              <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, fontFamily: "'Barlow', sans-serif", fontSize: "12px", padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>← HOME</button>
+              {submitCount > 0 && <span style={{ ...H, fontSize: "12px", color: GREY }}>{submitCount} {submitCount === 1 ? "ATTEMPT" : "ATTEMPTS"}</span>}
+              <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, fontSize: "12px", padding: "6px 14px", cursor: "pointer" }}>← HOME</button>
             </div>
           )}
         </div>
@@ -302,46 +277,29 @@ export default function PromptBattle() {
 
   if (screen === "home") return wrap(
     <div style={{ animation: "fadeUp 0.6s ease forwards", paddingTop: "64px" }}>
-      <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", letterSpacing: "0.25em", color: RED, textTransform: "uppercase", marginBottom: "20px" }}>AI CREATOR TOOLKIT</div>
-      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95", marginBottom: "8px", color: WHITE }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
-      <div style={{ width: "60px", height: "4px", background: RED, margin: "24px 0" }} />
-      <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", lineHeight: "1.7", color: GREY, maxWidth: "480px", marginBottom: "48px" }}>Test your AI prompting skills. Write prompts. Get reviewed by our expert panel. Earn your badge.</p>
-      <button onClick={() => setScreen("level")} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", letterSpacing: "0.12em", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
-    </div>
-  );
-
-  if (screen === "level") return wrap(
-    <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "48px" }}>
-      <div style={{ fontFamily: "'Barlow', sans-serif", fontSize: "12px", letterSpacing: "0.25em", color: RED, textTransform: "uppercase", marginBottom: "16px" }}>SELECT DIFFICULTY</div>
-      <h2 style={{ ...H, fontSize: "clamp(42px, 9vw, 64px)", lineHeight: "1", marginBottom: "8px" }}>HOW CONFIDENT ARE YOU?</h2>
-      {Object.entries(LEVELS).map(([key, cfg]) => (
-        <button key={key} onClick={() => loadNewChallenge(key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "transparent", border: "1px solid #222", padding: "24px 28px", marginBottom: "12px", cursor: "pointer" }}>
-          <div>
-            <span style={{ fontSize: "22px" }}>{cfg.emoji}</span>
-            <span style={{ ...H, fontSize: "26px", color: WHITE }}>{cfg.label}</span>
-          </div>
-          <span style={{ color: RED, fontSize: "28px", ...H }}>→</span>
-        </button>
-      ))}
+      <div style={{ fontSize: "12px", color: RED, marginBottom: "20px" }}>AI CREATOR TOOLKIT</div>
+      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95", color: WHITE }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
+      <p style={{ fontSize: "17px", color: GREY, margin: "24px 0 48px", maxWidth: "480px" }}>Test your AI prompting skills. Write prompts. Get reviewed by our expert panel. Earn your badge.</p>
+      <button onClick={() => loadNewChallenge("beginner")} style={{ background: RED, color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer", border: "none" }}>START BATTLE →</button>
     </div>
   );
 
   if (screen === "generating") return wrap(
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
       <div style={{ width: "64px", height: "64px", border: `3px solid #222`, borderTop: `3px solid ${RED}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "32px" }} />
-      <h2 style={{ ...H, fontSize: "36px", letterSpacing: "0.06em" }}>GENERATING CHALLENGE...</h2>
+      <h2 style={{ ...H, fontSize: "36px" }}>GENERATING CHALLENGE...</h2>
     </div>
   );
 
   if (screen === "challenge" && challenge) {
-    const cfg = LEVELS[level];
     return wrap(
       <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
         <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
-          <p style={{ fontFamily: "'Barlow', sans-serif", fontSize: "17px", color: WHITE, marginBottom: "24px" }}>{challenge.scenario}</p>
+          <div style={{ ...H, fontSize: "12px", color: RED, marginBottom: "16px" }}>YOUR CHALLENGE</div>
+          <p style={{ fontSize: "17px", color: WHITE, fontWeight: "500" }}>{challenge.scenario}</p>
         </div>
-        <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt..." style={{ width: "100%", minHeight: "160px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px" }} />
-        <button onClick={submit} disabled={userPrompt.trim().length < 20} style={{ background: RED, border: "none", color: WHITE, ...H, padding: "14px 32px", marginTop: "16px" }}>SUBMIT →</button>
+        <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt..." style={{ width: "100%", minHeight: "160px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", fontFamily: "'Barlow', sans-serif" }} />
+        <button onClick={submit} disabled={userPrompt.trim().length < 20} style={{ background: RED, color: WHITE, ...H, padding: "14px 32px", marginTop: "16px", cursor: "pointer", border: "none" }}>SUBMIT →</button>
       </div>
     );
   }
@@ -358,19 +316,41 @@ export default function PromptBattle() {
     const passed = results.total >= cfg.passMark;
     return wrap(
       <div style={{ animation: "fadeUp 0.5s ease forwards", paddingTop: "40px" }}>
-        <div style={{ borderTop: `4px solid ${RED}`, background: "#0d0d0d", padding: "40px", textAlign: "center" }}>
+        <div style={{ borderTop: `4px solid ${RED}`, background: "#0d0d0d", padding: "40px", textAlign: "center", marginBottom: "16px" }}>
           <div style={{ ...H, fontSize: "120px", color: passed ? RED : WHITE }}>{results.total}</div>
           <span style={{ background: passed ? RED : "#1a1a1a", ...H, padding: "8px 20px" }}>{results.grade.toUpperCase()}</span>
         </div>
-        <div style={{ padding: "28px", border: "1px solid #1f1f1f", marginTop: "16px" }}>
+
+        <div style={{ padding: "28px", border: "1px solid #1f1f1f", marginBottom: "16px" }}>
           <ScoreBar label="CLARITY" value={results.scores.clarity} delay={0} />
           <ScoreBar label="SPECIFICITY" value={results.scores.specificity} delay={150} />
           <ScoreBar label="CONTEXT AWARENESS" value={results.scores.awareness} delay={300} />
           <ScoreBar label="CRAFT & TECHNIQUE" value={results.scores.craft} delay={450} />
         </div>
+
+        {results.rewrittenPrompt && (
+          <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid #333`, padding: "28px", marginBottom: "16px" }}>
+            <div style={{ ...H, fontSize: "13px", color: WHITE, marginBottom: "6px" }}>WHAT A STRONG PROMPT LOOKS LIKE</div>
+            <p style={{ fontSize: "13px", color: GREY, marginBottom: "20px" }}>{results.rewriteNote}</p>
+            <div style={{ background: "#0f0f0f", border: "1px solid #2a2a2a", borderLeft: `3px solid ${RED}`, padding: "20px" }}>
+              <p style={{ fontSize: "15px", color: "#ddd", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>{results.rewrittenPrompt}</p>
+            </div>
+          </div>
+        )}
+
         {showLeadGate && <LeadGate level={level} scores={results} onComplete={handleLeadComplete} />}
         {leadCaptured && resultHistory.length >= 2 && <SessionReport history={resultHistory} userName={userName} />}
-        <button onClick={handleNextChallenge} style={{ background: RED, width: "100%", padding: "16px", marginTop: "24px", ...H }}>NEXT CHALLENGE →</button>
+
+        <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
+          <div style={{ fontSize: "48px" }}>{passed ? cfg.emoji : "💪"}</div>
+          <div style={{ ...H, color: passed ? RED : GREY }}>{passed ? cfg.badge : "KEEP PRACTISING"}</div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
+          <button onClick={handleRetry} style={{ background: "transparent", border: `2px solid ${RED}`, color: RED, ...H, padding: "14px", flex: 1, cursor: "pointer" }}>↻ RETRY</button>
+          {!showLeadGate && <button onClick={handleNextChallenge} style={{ background: RED, border: "none", color: WHITE, ...H, padding: "14px", flex: 1, cursor: "pointer" }}>NEXT →</button>}
+        </div>
+        <button onClick={() => setScreen("home")} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, padding: "14px", width: "100%", cursor: "pointer" }}>QUIT TO HOME</button>
       </div>
     );
   }
