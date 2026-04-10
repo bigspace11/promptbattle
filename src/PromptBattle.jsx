@@ -8,6 +8,40 @@ const GREY = "#888888";
 const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textTransform: "uppercase" };
 const B = { fontFamily: "'Barlow', sans-serif" };
 
+// HARD-CODED BEGINNER CHALLENGES
+const BEGINNER_CHALLENGES = [
+  {
+    title: "THE EXPLAINER",
+    scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.",
+    hint: "Think about: who is the audience? What do they already know? What analogies might help?",
+    evaluationFocus: "clarity, audience awareness, use of analogy"
+  },
+  {
+    title: "THE PRODUCT PITCH",
+    scenario: "Write a compelling product description for a plain white coffee mug.",
+    hint: "Think about: tone, sensory details, emotional appeal, who buys mugs and why?",
+    evaluationFocus: "creativity, persuasion, specificity"
+  },
+  {
+    title: "THE REWRITER",
+    scenario: "Rewrite this boring sentence to make it exciting: 'The meeting is on Tuesday at 3pm.'",
+    hint: "Think about: energy, context, what makes people actually want to show up?",
+    evaluationFocus: "creativity, transformation, voice"
+  },
+  {
+    title: "THE POLITE DECLINE",
+    scenario: "Write a polite but firm email to a friend declining an invitation to their weekend party because you need to rest.",
+    hint: "Think about: maintaining the friendship while being clear about your boundaries.",
+    evaluationFocus: "tone, empathy, clarity"
+  },
+  {
+    title: "THE RECIPE MAKER",
+    scenario: "Ask an AI to give you a dinner recipe using only eggs, spinach, and a piece of bread.",
+    hint: "Think about: providing clear constraints so the AI doesn't suggest extra ingredients you don't have.",
+    evaluationFocus: "specificity, constraint-setting"
+  }
+];
+
 async function callAPI(body) {
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -17,22 +51,17 @@ async function callAPI(body) {
   return response.json();
 }
 
-async function generateChallenge() {
-  const data = await callAPI({
-    model: "claude-sonnet-4-5",
-    max_tokens: 500,
-    system: `You are a creative challenge designer for Prompt Battle by BigSpaceAI. Generate a unique, practical prompting challenge. Return ONLY valid JSON: { "title": "THE [NAME]", "scenario": "...", "hint": "...", "evaluationFocus": "..." }`,
-    messages: [{ role: "user", content: "Generate a creative prompting challenge. Avoid cliches." }]
-  });
-  return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
-}
-
 async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
     model: "claude-sonnet-4-5",
     max_tokens: 1000,
-    system: `You are a senior AI trainer at BigSpaceAI. Score on four criteria (each 0-25): Clarity, Specificity, Awareness, Craft. Return ONLY valid JSON: { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." }, "total": 0-100, "grade": "...", "rewrittenPrompt": "...", "rewriteNote": "..." }`,
-    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT:\n${userPrompt}` }]
+    system: `You are an extremely strict AI Prompting Auditor. 
+    CRITICAL SCORING: Do NOT give high scores for lazy or generic prompts. 
+    A score of 20+ per category is reserved ONLY for prompts with clear constraints, persona, and structure.
+    If the prompt is one sentence or lacks detail, score it below 10 per category.
+    Score on (0-25): Clarity, Specificity, Awareness, Craft. 
+    Return ONLY valid JSON: { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." }, "total": 0-100, "grade": "...", "rewrittenPrompt": "...", "rewriteNote": "..." }`,
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT:\n${userPrompt}` }]
   });
   return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
 }
@@ -63,24 +92,28 @@ export default function PromptBattle() {
   const [challenge, setChallenge] = useState(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
+  const [history, setHistory] = useState([]);
 
-  const startNewBattle = async () => {
+  const startNewBattle = () => {
     setUserPrompt("");
     setResults(null);
     setScreen("generating");
-    try {
-      const c = await generateChallenge();
-      setChallenge(c);
+    
+    // Pick a random beginner challenge from the list
+    setTimeout(() => {
+      const randomIndex = Math.floor(Math.random() * BEGINNER_CHALLENGES.length);
+      setChallenge(BEGINNER_CHALLENGES[randomIndex]);
       setScreen("challenge");
-    } catch { setScreen("home"); }
+    }, 800);
   };
 
   const submit = async () => {
-    if (userPrompt.trim().length < 20) return;
+    if (userPrompt.trim().length < 5) return;
     setScreen("judging");
     try {
       const r = await judgePrompt(challenge, userPrompt);
       setResults(r);
+      setHistory(prev => [r.total, ...prev].slice(0, 5));
       setScreen("results");
     } catch { setScreen("challenge"); }
   };
@@ -108,7 +141,7 @@ export default function PromptBattle() {
   if (screen === "home") return wrap(
     <div style={{ animation: "fadeUp 0.6s ease" }}>
       <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95" }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
-      <p style={{ ...B, fontSize: "17px", color: GREY, margin: "24px 0 48px" }}>Test your AI prompting skills. Write prompts. Get scored. Earn your badge.</p>
+      <p style={{ ...B, fontSize: "17px", color: GREY, margin: "24px 0 48px" }}>Test your AI prompting skills on beginner tasks. Get audited. Earn your badge.</p>
       <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
     </div>
   );
@@ -116,7 +149,7 @@ export default function PromptBattle() {
   if (screen === "generating") return wrap(
     <div style={{ textAlign: "center", paddingTop: "60px" }}>
       <div style={{ width: "64px", height: "64px", border: "4px solid #222", borderTopColor: RED, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 32px" }} />
-      <h2 style={{ ...H, fontSize: "32px" }}>GENERATING CHALLENGE...</h2>
+      <h2 style={{ ...H, fontSize: "32px" }}>SELECTING TASK...</h2>
     </div>
   );
 
@@ -141,19 +174,31 @@ export default function PromptBattle() {
           <p style={{ ...B, fontSize: "15px", color: GREY }}>{challenge.hint}</p>
         </div>
       </div>
-      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Write your prompt here..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px" }} />
-      <button onClick={submit} disabled={userPrompt.length < 20} style={{ background: userPrompt.length < 20 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "16px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT FOR REVIEW →</button>
+      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px" }} />
+      <button onClick={submit} disabled={userPrompt.length < 5} style={{ background: userPrompt.length < 5 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "16px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT FOR AUDIT →</button>
     </div>
   );
 
   if (screen === "results") {
-    const passed = results.total >= 70;
+    const passed = results.total >= 80;
     return wrap(
       <div style={{ animation: "fadeUp 0.5s ease" }}>
         <div style={{ background: "#0d0d0d", padding: "40px", textAlign: "center", borderTop: `4px solid ${RED}`, marginBottom: "16px" }}>
           <div style={{ ...H, fontSize: "100px", color: RED, lineHeight: "1" }}>{results.total}</div>
           <div style={{ ...H, fontSize: "24px" }}>{results.grade.toUpperCase()}</div>
         </div>
+
+        {/* SCORE HISTORY */}
+        {history.length > 1 && (
+          <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
+            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px" }}>LAST 5 ATTEMPTS</div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              {history.map((s, i) => (
+                <div key={i} style={{ flex: 1, background: i === 0 ? RED : "#222", color: WHITE, padding: "8px", textAlign: "center", ...H, fontSize: "18px" }}>{s}</div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
           <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons?.clarity} />
@@ -171,9 +216,8 @@ export default function PromptBattle() {
 
         <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
           <div style={{ fontSize: "48px", marginBottom: "12px" }}>{passed ? "🏆" : "💪"}</div>
-          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.25em", color: passed ? RED : GREY, marginBottom: "8px" }}>{passed ? "ACHIEVEMENT UNLOCKED" : "KEEP PRACTISING"}</div>
+          <div style={{ ...H, fontSize: "13px", letterSpacing: "0.25em", color: passed ? RED : GREY, marginBottom: "8px" }}>{passed ? "ACHIEVEMENT UNLOCKED" : "STRICT AUDIT: KEEP PRACTISING"}</div>
           <div style={{ ...H, fontSize: "32px", letterSpacing: "0.06em", color: passed ? WHITE : "#444", marginBottom: "8px" }}>{passed ? "PROMPT MASTER" : "NOT YET..."}</div>
-          {passed && <div style={{ ...B, fontSize: "13px", color: GREY }}>BigSpaceAI Certified · {new Date().toLocaleDateString("en-SG", { month: "short", year: "numeric" })}</div>}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -181,7 +225,7 @@ export default function PromptBattle() {
           <button onClick={() => window.location.href = "https://bigspaceai.com"} style={{ background: "transparent", border: "1px solid #333", color: GREY, ...H, fontSize: "16px", padding: "16px", cursor: "pointer", width: "100%" }}>VISIT BIGSPACEAI.COM</button>
         </div>
 
-        <p style={{ ...B, fontSize: "12px", color: "#333", textAlign: "center", marginTop: "24px", letterSpacing: "0.05em" }}>LEARN MORE AT BIGSPACEAI.COM</p>
+        <p style={{ ...B, fontSize: "12px", color: "#333", textAlign: "center", marginTop: "24px" }}>BIGSPACEAI.COM · BEGINNER LEVEL</p>
       </div>
     );
   }
