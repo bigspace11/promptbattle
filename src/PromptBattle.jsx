@@ -261,9 +261,9 @@ export default function PromptBattle() {
     setScreen("challenge");
   };
 
-  const handleNextChallenge = () => {
-    pickChallenge(level);
-  };
+ const handleNextChallenge = () => {
+  loadNewChallenge(level);
+};
 
   const submit = async () => {
     if (userPrompt.trim().length < 20) return;
