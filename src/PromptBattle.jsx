@@ -173,29 +173,12 @@ function LeadGate({ level, scores, onComplete }) {
 
 function SessionReport({ history, userName }) {
   const avg = Math.round(history.reduce((s, r) => s + r.total, 0) / history.length);
-  
-  // THINK mapping
-  const avgTarget = Math.round(history.reduce((s, r) => s + r.scores.target, 0) / history.length);
-  const avgHuman = Math.round(history.reduce((s, r) => s + r.scores.human, 0) / history.length);
-  const avgRefs = Math.round(history.reduce((s, r) => s + r.scores.refs, 0) / history.length);
-  const avgNav = Math.round(history.reduce((s, r) => s + r.scores.nav, 0) / history.length);
-  const avgRefine = Math.round(history.reduce((s, r) => s + r.scores.refine, 0) / history.length);
-
-  const skills = [
-    ["Target Outcome", avgTarget], 
-    ["Human Context", avgHuman], 
-    ["References", avgRefs], 
-    ["Navigation", avgNav], 
-    ["Refining", avgRefine]
-  ].sort((a, b) => b[1] - a[1]);
-
   const trend = history.length > 1 ? history[history.length - 1].total - history[0].total : 0;
 
   return (
     <div style={{ border: "1px solid #1f1f1f", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "16px" }}>
       <div style={{ ...H, fontSize: "13px", letterSpacing: "0.2em", color: RED, marginBottom: "20px" }}>📊 YOUR SESSION REPORT{userName ? ` — ${userName.toUpperCase()}` : ""}</div>
       
-      {/* Average and Trend Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
         <div style={{ background: "#111", padding: "20px", textAlign: "center" }}>
           <div style={{ ...H, fontSize: "42px", color: RED }}>{avg}</div>
@@ -207,16 +190,18 @@ function SessionReport({ history, userName }) {
         </div>
       </div>
 
-      {/* List of attempts */}
       <div style={{ marginBottom: "20px" }}>
         <div style={{ ...H, fontSize: "12px", letterSpacing: "0.15em", color: WHITE, marginBottom: "12px" }}>ATTEMPT HISTORY</div>
         {history.map((r, i) => (
           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
             <span style={{ fontFamily: "'Barlow', sans-serif", fontSize: "14px", color: GREY }}>Attempt {i + 1}</span>
-            <span style={{ ...H, fontSize: "18px", color: r.total >= 70 ? RED : WHITE }}>{r.total}</span>
+            <span style={{ ...H, fontSize: "18px", color: r.total >= 65 ? RED : WHITE }}>{r.total}</span>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
       {/* Numerical breakdown only */}
       <div style={{ background: "#111", padding: "16px 20px" }}>
