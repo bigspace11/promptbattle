@@ -15,48 +15,41 @@ const BEGINNER_CHALLENGES = [
 ];
 
 async function judgePrompt(challenge, userPrompt) {
+  // We use your exact working model and strict system instructions
+  const data = await callAPI({
+    model: "claude-sonnet-4-5",
+    max_tokens: 1000,
+    system: `You are an extremely strict AI Prompting Auditor. 
+    CRITICAL SCORING: Do NOT give high scores for lazy or generic prompts. 
+    A score of 20+ per category is reserved ONLY for prompts with clear constraints, persona, and structure.
+    If the prompt is one sentence or lacks detail, score it below 10 per category.
+    Score on (0-25): Clarity, Specificity, Awareness, Craft. 
+    Return ONLY valid JSON: { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." }, "total": 0-100, "grade": "...", "rewrittenPrompt": "...", "rewriteNote": "..." }`,
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT:\n${userPrompt}` }]
+  });
+
   try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        // TRYING THE EXACT FULL VERSION ID
-        model: "claude-3-5-sonnet-20240620", 
-        max_tokens: 1000,
-        system: "You are a strict Prompt Auditor. Return ONLY JSON.",
-        messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT: ${userPrompt}` }]
-      })
-    });
+    // 1. Get the raw text from the Anthropic response format
+    const rawText = data.content[0].text;
 
-    const data = await response.json();
+    // 2. Clean the text (This handles the cases where the AI adds markdown blocks)
+    const cleanJson = rawText.replace(/```json|```/g, "").trim();
 
-    // If it's STILL not found, let's try Haiku as a guaranteed fallback
-    if (data.error && data.error.type === "not_found_error") {
-      console.warn("Sonnet not found, trying Haiku fallback...");
-      const backupResponse = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-3-haiku-20240307", 
-          max_tokens: 1000,
-          system: "Return ONLY JSON.",
-          messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT: ${userPrompt}` }]
-        })
-      });
-      const backupData = await backupResponse.json();
-      if (backupData.error) throw new Error(`Both models failed: ${backupData.error.message}`);
-      return processData(backupData);
-    }
+    // 3. Parse and return
+    const parsed = JSON.parse(cleanJson);
 
-    if (data.error) throw new Error(data.error.message);
-    return processData(data);
+    // 4. Ensure the total is a Number for your history bars
+    return {
+      ...parsed,
+      total: Number(parsed.total) || 0
+    };
 
   } catch (err) {
-    console.error("API Connection Error:", err);
-    throw err;
+    console.error("Parser Error:", err);
+    console.log("Raw Data Received:", data);
+    throw new Error("Unexpected API response format");
   }
 }
-
 // Helper to handle the parsing logic
 function processData(data) {
   const rawText = data.content ? data.content[0].text : 
