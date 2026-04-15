@@ -139,15 +139,24 @@ export default function PromptBattle() {
     }, 800);
   };
 
-  const submit = async () => {
+const submit = async () => {
   if (userPrompt.trim().length < 5) return;
   setScreen("judging");
   try {
     const r = await judgePrompt(challenge, userPrompt);
-    // ... rest of your logic
+    
+    // CRITICAL: You must set the results state so the UI can switch to the results screen
+    setResults(r);
+    
+    // CRITICAL: Update the history so the "Battle Records" bars show up
+    setHistory(prev => {
+      const newHistory = [...prev, r.total];
+      return newHistory.slice(-5);
+    });
+    
     setScreen("results");
   } catch (error) {
-    console.error("Submission Error:", error); // Check your browser console!
+    console.error("Submission Error:", error);
     setScreen("challenge"); 
     alert("Audit failed. Check the console for errors.");
   }
