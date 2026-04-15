@@ -30,7 +30,7 @@ async function callAPI(body) {
 
 async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
-    model: "claude-3-5-sonnet-20240620", // Ensure this matches your enabled model
+    model: "claude-3-5-sonnet-20240620",
     max_tokens: 1000,
     system: `You are an AI Prompting Auditor. Return ONLY a JSON object:
     { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, 
@@ -40,30 +40,41 @@ async function judgePrompt(challenge, userPrompt) {
   });
 
   try {
-    // 1. Get raw text from Anthropic or OpenAI format
-    let rawText = data.content ? data.content[0].text : data.choices[0].message.content;
+    // 1. SAFE DATA ACCESS: Check for Anthropic content OR OpenAI choices
+    let rawText = "";
     
-    // 2. Extract JSON even if AI adds extra words
+    if (data.content && data.content[0]) {
+      // This is the Anthropic format
+      rawText = data.content[0].text;
+    } else if (data.choices && data.choices[0]) {
+      // This is the OpenAI format
+      rawText = data.choices[0].message.content;
+    } else {
+      // Fallback if the data is just the raw string or an unexpected object
+      rawText = typeof data === 'string' ? data : JSON.stringify(data);
+    }
+    
+    // 2. Extract JSON (ignores any conversational text around it)
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found");
+    if (!jsonMatch) throw new Error("No JSON found in AI response");
     
     const parsed = JSON.parse(jsonMatch[0]);
 
-    // 3. Mandatory Fallbacks to prevent blank screen
+    // 3. Return with safety defaults to prevent "Blank Page" crashes
     return {
       scores: parsed.scores || { clarity: 0, specificity: 0, awareness: 0, craft: 0 },
-      scoreReasons: parsed.scoreReasons || {},
+      scoreReasons: parsed.scoreReasons || { clarity: "", specificity: "", awareness: "", craft: "" },
       total: parsed.total || 0,
-      grade: parsed.grade || "C",
+      grade: parsed.grade || "N/A",
       rewrittenPrompt: parsed.rewrittenPrompt || "",
       rewriteNote: parsed.rewriteNote || ""
     };
   } catch (err) {
-    console.error("Parse error:", err);
-    throw err;
+    console.error("Critical Parsing Error:", err);
+    console.log("Raw data received from API:", data); // This helps you see what came back
+    throw new Error("Audit failed to parse the AI response.");
   }
 }
-
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
   const [show, setShow] = useState(false);
