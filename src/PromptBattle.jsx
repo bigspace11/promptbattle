@@ -182,9 +182,6 @@ if (screen === "challenge") return wrap(
 <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
 <div style={{ ...H, fontSize: "14px", color: RED, marginBottom: "16px" }}>{challenge.title}</div>
 <p style={{ ...B, fontSize: "18px", color: WHITE, marginBottom: "24px", lineHeight: "1.6" }}>{challenge.scenario}</p>
-<div style={{ background: "#111", padding: "16px", borderLeft: `3px solid ${RED}` }}>
-<p style={{ ...B, fontSize: "15px", color: GREY }}>{challenge.hint}</p>
-</div>
 </div>
 <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px" }} />
 <button onClick={submit} disabled={userPrompt.length < 5} style={{ background: userPrompt.length < 5 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "16px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT FOR AUDIT →</button>
