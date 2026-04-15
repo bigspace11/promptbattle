@@ -120,20 +120,26 @@ export default function PromptBattle() {
   };
 
   const submit = async () => {
-    if (userPrompt.trim().length < 5) return;
-    setScreen("judging");
-    try {
-      const r = await judgePrompt(challenge, userPrompt);
+  if (userPrompt.trim().length < 5) return;
+  setScreen("judging");
+  try {
+    const r = await judgePrompt(challenge, userPrompt);
+    
+    // Safety check: ensure 'r' exists and has the total score
+    if (r && typeof r.total !== 'undefined') {
       setResults(r);
       setHistory(prev => [...prev, r.total].slice(-5));
       setScreen("results");
-    } catch (err) { 
-      console.error("Submission error:", err);
-      // STOP LOSS: If it fails, alert and go back so tokens aren't stuck
-      alert("System lag or token error. Please try again.");
-      setScreen("challenge"); 
+    } else {
+      throw new Error("Invalid scoring data received");
     }
-  };
+  } catch (err) { 
+    console.error("Submission error:", err);
+    // This is your safety net
+    alert("Scoring failed. This could be due to a system timeout or API format change. Please try again.");
+    setScreen("challenge"); 
+  }
+};
 
   const wrap = (children) => (
     <div style={{ minHeight: "100vh", background: BLACK, color: WHITE, position: "relative" }}>
