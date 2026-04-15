@@ -20,43 +20,65 @@ async function judgePrompt(challenge, userPrompt) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        // This matches your 'Claude Sonnet Active' status in the console
-        model: "claude-3-5-sonnet-latest", 
+        // TRYING THE EXACT FULL VERSION ID
+        model: "claude-3-5-sonnet-20240620", 
         max_tokens: 1000,
-        system: "You are a strict Prompt Auditor. Return ONLY a JSON object with keys: total, grade, scores (clarity, specificity, awareness, craft), and scoreReasons.",
-        messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT: ${userPrompt}` }]
+        system: "You are a strict Prompt Auditor. Return ONLY JSON.",
+        messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT: ${userPrompt}` }]
       })
     });
 
     const data = await response.json();
+
+    // If it's STILL not found, let's try Haiku as a guaranteed fallback
+    if (data.error && data.error.type === "not_found_error") {
+      console.warn("Sonnet not found, trying Haiku fallback...");
+      const backupResponse = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-3-haiku-20240307", 
+          max_tokens: 1000,
+          system: "Return ONLY JSON.",
+          messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nPROMPT: ${userPrompt}` }]
+        })
+      });
+      const backupData = await backupResponse.json();
+      if (backupData.error) throw new Error(`Both models failed: ${backupData.error.message}`);
+      return processData(backupData);
+    }
+
     if (data.error) throw new Error(data.error.message);
+    return processData(data);
 
-    // Extract text from Anthropic or OpenAI format
-    const rawText = data.content ? data.content[0].text : 
-                    data.choices ? data.choices[0].message.content : null;
-
-    if (!rawText) throw new Error("No response from AI");
-
-    // Extract JSON block even if there is surrounding text
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Invalid JSON format");
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    return {
-      total: Number(parsed.total) || 0,
-      grade: parsed.grade || "B",
-      scores: {
-        clarity: Number(parsed.scores?.clarity || 0),
-        specificity: Number(parsed.scores?.specificity || 0),
-        awareness: Number(parsed.scores?.awareness || 0),
-        craft: Number(parsed.scores?.craft || 0)
-      },
-      scoreReasons: parsed.scoreReasons || {}
-    };
   } catch (err) {
-    console.error("Audit Error:", err);
+    console.error("API Connection Error:", err);
     throw err;
   }
+}
+
+// Helper to handle the parsing logic
+function processData(data) {
+  const rawText = data.content ? data.content[0].text : 
+                  data.choices ? data.choices[0].message.content : null;
+
+  if (!rawText) throw new Error("AI returned no content.");
+
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Response was not valid JSON.");
+  
+  const parsed = JSON.parse(jsonMatch[0]);
+  return {
+    total: Number(parsed.total) || 0,
+    grade: parsed.grade || "B",
+    scores: {
+      clarity: Number(parsed.scores?.clarity || 0),
+      specificity: Number(parsed.scores?.specificity || 0),
+      awareness: Number(parsed.scores?.awareness || 0),
+      craft: Number(parsed.scores?.craft || 0)
+    },
+    scoreReasons: parsed.scoreReasons || {}
+  };
 }
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
