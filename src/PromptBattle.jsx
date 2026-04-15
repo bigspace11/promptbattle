@@ -71,17 +71,21 @@ async function callAPI(body) {
 
 async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
-    model: "claude-sonnet-4-5",
-    max_tokens: 1000,
-    system: `You are an extremely strict AI Prompting Auditor. 
-    CRITICAL SCORING: Do NOT give high scores for lazy or generic prompts. 
-    A score of 20+ per category is reserved ONLY for prompts with clear constraints, persona, and structure.
-    If the prompt is one sentence or lacks detail, score it below 10 per category.
-    Score on (0-25): Clarity, Specificity, Awareness, Craft. 
-    Return ONLY valid JSON: { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." }, "total": 0-100, "grade": "...", "rewrittenPrompt": "...", "rewriteNote": "..." }`,
-    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT:\n${userPrompt}` }]
+    // ... your config
   });
-  return JSON.parse(data.content[0].text.replace(/```json|```/g, "").trim());
+
+  // Most AI SDKs return the text in data.choices[0].message.content (OpenAI)
+  // or data.content[0].text (Anthropic). 
+  // Ensure your API route is actually passing this through!
+  
+  try {
+    const rawContent = data.content ? data.content[0].text : data.choices[0].message.content;
+    const cleanJson = rawContent.replace(/```json|```/g, "").trim();
+    return JSON.parse(cleanJson);
+  } catch (err) {
+    console.error("Failed to parse AI response:", data);
+    throw new Error("Invalid JSON response");
+  }
 }
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
@@ -136,18 +140,18 @@ export default function PromptBattle() {
   };
 
   const submit = async () => {
-    if (userPrompt.trim().length < 5) return;
-    setScreen("judging");
-    try {
-      const r = await judgePrompt(challenge, userPrompt);
-      setResults(r);
-      setHistory(prev => {
-        const newHistory = [...prev, r.total];
-        return newHistory.slice(-5);
-      });
-      setScreen("results");
-    } catch { setScreen("challenge"); }
-  };
+  if (userPrompt.trim().length < 5) return;
+  setScreen("judging");
+  try {
+    const r = await judgePrompt(challenge, userPrompt);
+    // ... rest of your logic
+    setScreen("results");
+  } catch (error) {
+    console.error("Submission Error:", error); // Check your browser console!
+    setScreen("challenge"); 
+    alert("Audit failed. Check the console for errors.");
+  }
+};
 
   const wrap = (children) => (
     <div style={{ minHeight: "100vh", background: BLACK, color: WHITE, position: "relative" }}>
