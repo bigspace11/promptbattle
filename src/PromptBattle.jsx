@@ -32,22 +32,47 @@ async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
     model: "claude-3-5-sonnet-20240620", 
     max_tokens: 1000,
-    system: `You are an extremely strict AI Prompting Auditor. CRITICAL: Return ONLY valid JSON.`,
-    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT: ${userPrompt}` }]
+    system: `You are an extremely strict AI Prompting Auditor. Return ONLY valid JSON.`,
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT:\n${userPrompt}` }]
   });
 
   try {
-    // 1. Extract the string regardless of API format (Anthropic vs OpenAI)
-    const rawContent = data.content ? data.content[0].text : data.choices[0].message.content;
+    // 1. DYNAMIC FORMAT CHECK (This prevents the G.choices error)
+    let rawText = "";
     
-    // 2. REGEX FIX: Find the FIRST '{' and LAST '}' to ignore conversational filler
-    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found");
+    if (data.content && data.content[0]) {
+      // It's Anthropic/Claude format
+      rawText = data.content[0].text;
+    } else if (data.choices && data.choices[0]) {
+      // It's OpenAI format
+      rawText = data.choices[0].message.content;
+    } else {
+      // Fail-safe if neither exists
+      throw new Error("Unexpected API response format");
+    }
+
+    // 2. CLEAN THE TEXT (In case the AI added "Here is the JSON:")
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
     
-    return JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // 3. RETURN DATA
+    return {
+      total: Number(parsed.total) || 0,
+      grade: parsed.grade || "Audited",
+      scores: {
+        clarity: Number(parsed.scores?.clarity) || 0,
+        specificity: Number(parsed.scores?.specificity) || 0,
+        awareness: Number(parsed.scores?.awareness) || 0,
+        craft: Number(parsed.scores?.craft) || 0
+      },
+      scoreReasons: parsed.scoreReasons || {},
+      rewrittenPrompt: parsed.rewrittenPrompt || ""
+    };
   } catch (err) {
     console.error("Scoring Parser Error:", err);
-    throw err;
+    throw err; // This triggers the "System lag" alert in your submit function
   }
 }
 
