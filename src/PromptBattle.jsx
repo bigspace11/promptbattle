@@ -222,8 +222,7 @@ return wrap(
 {/* LATEST SCORES TRACKER */}
 {history.length > 1 && (
 <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
-            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>LATEST SCORES</div>
-            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
+<div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
 <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
 {history.map((s, i) => {
 const isCurrent = i === history.length - 1;
@@ -254,12 +253,7 @@ border: isCurrent ? "none" : "1px solid #333"
 <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
 </div>
 
-{results.rewrittenPrompt && (
-<div style={{ background: "#0f0f0f", padding: "28px", marginBottom: "16px", border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}` }}>
-<div style={{ ...H, fontSize: "14px", color: RED, marginBottom: "12px", letterSpacing: "0.1em" }}>PRO TIP: REWRITTEN VERSION</div>
-<p style={{ ...B, fontSize: "15px", color: "#ddd", whiteSpace: "pre-wrap", lineHeight: "1.8" }}>{results.rewrittenPrompt}</p>
-</div>
-)}
+      
 
 <div style={{ border: `2px solid ${passed ? RED : "#222"}`, background: passed ? "rgba(235,29,37,0.06)" : "#0d0d0d", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
 <div style={{ fontSize: "48px", marginBottom: "12px" }}>{passed ? "🏆" : "💪"}</div>
@@ -279,3 +273,5 @@ border: isCurrent ? "none" : "1px solid #333"
 
 return null;
 }
+
+
