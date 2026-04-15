@@ -24,57 +24,47 @@ async function callAPI(body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
-  if (!response.ok) throw new Error("Network response was not ok");
   return response.json();
 }
 
 async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
-    model: "claude-3-5-sonnet-20240620",
+    model: "claude-3-5-sonnet-20240620", // Updated model name for stability
     max_tokens: 1000,
-    system: `You are an AI Prompting Auditor. Return ONLY a JSON object:
-    { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, 
-      "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." }, 
-      "total": 0-100, "grade": "...", "rewrittenPrompt": "...", "rewriteNote": "..." }`,
-    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT: ${userPrompt}` }]
+    system: `You are an extremely strict AI Prompting Auditor. 
+      CRITICAL SCORING: Do NOT give high scores for lazy or generic prompts. 
+      A score of 20+ per category is reserved ONLY for prompts with clear constraints, persona, and structure.
+      If the prompt is one sentence or lacks detail, score it below 10 per category.
+      Score on (0-25): Clarity, Specificity, Awareness, Craft. 
+      Return ONLY valid JSON: { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, "scoreReasons": { "clarity": "...", "specificity": "...", "awareness": "...", "craft": "..." }, "total": 0-100, "grade": "...", "rewrittenPrompt": "...", "rewriteNote": "..." }`,
+    messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT:\n${userPrompt}` }]
   });
 
   try {
-    // 1. SAFE DATA ACCESS: Check for Anthropic content OR OpenAI choices
-    let rawText = "";
-    
-    if (data.content && data.content[0]) {
-      // This is the Anthropic format
-      rawText = data.content[0].text;
-    } else if (data.choices && data.choices[0]) {
-      // This is the OpenAI format
-      rawText = data.choices[0].message.content;
-    } else {
-      // Fallback if the data is just the raw string or an unexpected object
-      rawText = typeof data === 'string' ? data : JSON.stringify(data);
-    }
-    
-    // 2. Extract JSON (ignores any conversational text around it)
+    // Anthropic specific data extraction
+    const rawText = data.content ? data.content[0].text : data.choices[0].message.content;
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in AI response");
-    
     const parsed = JSON.parse(jsonMatch[0]);
 
-    // 3. Return with safety defaults to prevent "Blank Page" crashes
+    // Ensure numeric values and proper keys for history/UI tracking
     return {
-      scores: parsed.scores || { clarity: 0, specificity: 0, awareness: 0, craft: 0 },
-      scoreReasons: parsed.scoreReasons || { clarity: "", specificity: "", awareness: "", craft: "" },
-      total: parsed.total || 0,
-      grade: parsed.grade || "N/A",
-      rewrittenPrompt: parsed.rewrittenPrompt || "",
-      rewriteNote: parsed.rewriteNote || ""
+      total: Number(parsed.total) || 0,
+      grade: parsed.grade || "C",
+      scores: {
+        clarity: Number(parsed.scores?.clarity) || 0,
+        specificity: Number(parsed.scores?.specificity) || 0,
+        awareness: Number(parsed.scores?.awareness) || 0,
+        craft: Number(parsed.scores?.craft) || 0
+      },
+      scoreReasons: parsed.scoreReasons || {},
+      rewrittenPrompt: parsed.rewrittenPrompt || ""
     };
   } catch (err) {
-    console.error("Critical Parsing Error:", err);
-    console.log("Raw data received from API:", data); // This helps you see what came back
-    throw new Error("Audit failed to parse the AI response.");
+    console.error("Parse error:", err);
+    throw err;
   }
 }
+
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
   const [show, setShow] = useState(false);
@@ -124,11 +114,11 @@ export default function PromptBattle() {
     try {
       const r = await judgePrompt(challenge, userPrompt);
       setResults(r);
+      // History Logic: Keeps the last 5 scores
       setHistory(prev => [...prev, r.total].slice(-5));
       setScreen("results");
-    } catch (e) { 
-      console.error(e);
-      alert("Audit failed. Check console.");
+    } catch { 
+      alert("Submission error. Please check your console.");
       setScreen("challenge"); 
     }
   };
@@ -144,7 +134,7 @@ export default function PromptBattle() {
       `}</style>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />
       <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "60px", background: "#000", borderBottom: "1px solid rgba(255,255,255,0.1)", zIndex: 99, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <a href="https://bigspaceai.com"><img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px" }} /></a>
+        <a href="https://bigspaceai.com"><img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", cursor: "pointer" }} /></a>
       </div>
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
       <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "120px 20px 80px" }}>
@@ -177,7 +167,7 @@ export default function PromptBattle() {
           <p style={{ ...B, fontSize: "15px", color: GREY }}>{challenge.hint}</p>
         </div>
       </div>
-      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px" }} />
+      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px", outline: "none" }} />
       <button onClick={submit} disabled={userPrompt.length < 5} style={{ background: userPrompt.length < 5 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "16px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT FOR AUDIT →</button>
     </div>
   );
@@ -191,21 +181,39 @@ export default function PromptBattle() {
           <div style={{ ...H, fontSize: "24px" }}>{results.grade.toUpperCase()}</div>
         </div>
 
+        {/* BATTLE RECORDS / HISTORY SCORE */}
+        {history.length > 1 && (
+          <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
+            <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+              {history.map((s, i) => (
+                <div key={i} style={{ 
+                  flex: 1, maxWidth: "60px", background: i === history.length - 1 ? RED : "#222", 
+                  color: i === history.length - 1 ? WHITE : "#555", padding: "10px 0", 
+                  textAlign: "center", ...H, fontSize: "20px", border: i === history.length - 1 ? "none" : "1px solid #333" 
+                }}>{s}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
-          <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons.clarity} />
-          <ScoreBar label="SPECIFICITY" value={results.scores.specificity} reason={results.scoreReasons.specificity} delay={150} />
-          <ScoreBar label="AWARENESS" value={results.scores.awareness} reason={results.scoreReasons.awareness} delay={300} />
-          <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons.craft} delay={450} />
+          <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons?.clarity} />
+          <ScoreBar label="SPECIFICITY" value={results.scores.specificity} reason={results.scoreReasons?.specificity} delay={150} />
+          <ScoreBar label="AWARENESS" value={results.scores.awareness} reason={results.scoreReasons?.awareness} delay={300} />
+          <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
         </div>
 
         {results.rewrittenPrompt && (
           <div style={{ background: "#0f0f0f", padding: "28px", marginBottom: "24px", border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}` }}>
             <div style={{ ...H, fontSize: "14px", color: RED, marginBottom: "12px" }}>PRO TIP: REWRITTEN VERSION</div>
-            <p style={{ ...B, fontSize: "15px", color: "#ddd", whiteSpace: "pre-wrap" }}>{results.rewrittenPrompt}</p>
+            <p style={{ ...B, fontSize: "15px", color: "#ddd", whiteSpace: "pre-wrap", lineHeight: "1.8" }}>{results.rewrittenPrompt}</p>
           </div>
         )}
 
-        <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "20px", cursor: "pointer", width: "100%" }}>NEW CHALLENGE</button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "20px", cursor: "pointer", width: "100%" }}>NEW CHALLENGE</button>
+        </div>
       </div>
     );
   }
