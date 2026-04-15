@@ -13,51 +13,40 @@ const BEGINNER_CHALLENGES = [
 id: 1,
 title: "THE EXPLAINER",
 scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.",
-hint: "Think about: who is the audience? What do they already know? What analogies might help?",
 evaluationFocus: "clarity, audience awareness, use of analogy"
 },
 {
-id: 2,
-title: "THE PRODUCT PITCH",
-scenario: "Write a compelling product description for a plain white coffee mug.",
-hint: "Think about: tone, sensory details, emotional appeal, who buys mugs and why?",
-evaluationFocus: "creativity, persuasion, specificity"
-},
-{
-id: 3,
-title: "THE REWRITER",
-scenario: "Rewrite this boring sentence to make it exciting: 'The meeting is on Tuesday at 3pm.'",
-hint: "Think about: energy, context, what makes people actually want to show up?",
-evaluationFocus: "creativity, transformation, voice"
-},
-{
-id: 4,
-title: "THE POLITE DECLINE",
-scenario: "Write a polite but firm email to a friend declining an invitation to their weekend party because you need to rest.",
-hint: "Think about: maintaining the friendship while being clear about your boundaries.",
-evaluationFocus: "tone, empathy, clarity"
-},
-{
-id: 5,
-title: "THE RECIPE MAKER",
-scenario: "Ask an AI to give you a dinner recipe using only eggs, spinach, and a piece of bread.",
-hint: "Think about: providing clear constraints so the AI doesn't suggest extra ingredients you don't have.",
-evaluationFocus: "specificity, constraint-setting"
-},
-{
-id: 6,
-title: "THE TRAVEL GUIDE",
-scenario: "You have 4 hours in London. Ask the AI for a walking route that sees 3 major landmarks and ends at a great pub.",
-hint: "Think about: time management, starting location, and specific interests.",
-evaluationFocus: "logistics, clarity, constraints"
-},
-{
-id: 7,
-title: "THE INSTA-CAPTION",
-scenario: "Write a short, witty Instagram caption for a photo of a very messy desk titled 'Productivity'.",
-hint: "Think about: irony, brevity, and target audience.",
-evaluationFocus: "tone, humor, impact"
-}
+const BEGINNER_CHALLENGES = [
+  {
+    id: 1,
+    title: "THE CULTURAL GUIDE",
+    scenario: "You are hosting a guest from overseas. Explain what 'CPF' is in simple terms so they understand how it helps Singaporeans with housing and healthcare, without using any government jargon.",
+    evaluationFocus: "clarity, relatability, cultural context"
+  },
+  {
+    id: 2,
+    title: "THE PROFESSIONAL BOUNDARY",
+    scenario: "A client or colleague messages you about work on a Sunday afternoon. Write a firm but professional WhatsApp message explaining that you will attend to it on Monday.",
+    evaluationFocus: "tone, boundary-setting, professionalism"
+  },
+  {
+    id: 3,
+    title: "THE FRIDGE CHALLENGE",
+    scenario: "You only have eggs, spinach, and bread. Ask for a 10-minute recipe that sounds like it came from a fancy cafe.",
+    evaluationFocus: "creativity, constraint-setting"
+  },
+  {
+    id: 4,
+    title: "THE ALLERGY RESEARCHER",
+    scenario: "You are in the East side of Singapore and need to find a place for a team lunch. One colleague has a severe nut and dairy allergy. Ask the AI for 3 suitable cafe recommendations in the East.",
+    evaluationFocus: "research depth, safety, local relevance"
+  },
+  {
+    id: 5,
+    title: "THE TRAVEL GUIDE",
+    scenario: "You have 4 hours in Tokyo. Ask the AI for a walking route that sees 3 major landmarks and end at a huge shopping mall.",
+    evaluationFocus: "logistics, clarity, constraints"
+  }
 ];
 
 async function callAPI(body) {
