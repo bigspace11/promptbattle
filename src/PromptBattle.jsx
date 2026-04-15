@@ -26,28 +26,28 @@ async function judgePrompt(challenge, userPrompt) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20240620", 
+        // Try this more generic name first
+        model: "claude-3-5-sonnet", 
         max_tokens: 1000,
-        system: `You are an extremely strict AI Prompting Auditor. 
-        Return ONLY a JSON object. No conversation. 
-        Format: { "scores": { "clarity": 0-25, "specificity": 0-25, "awareness": 0-25, "craft": 0-25 }, "total": 0-100, "grade": "...", "scoreReasons": {...}, "rewrittenPrompt": "..." }`,
+        system: "You are an extremely strict AI Prompting Auditor. Return ONLY a JSON object. No conversation.",
         messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT: ${userPrompt}` }]
       })
     });
 
     const data = await response.json();
     
-    // Safety check for backend errors
-    if (data.error) throw new Error(data.error.message || "API Error");
+    // If the error persists, the console will now show the EXACT message from Anthropic
+    if (data.error) {
+       console.error("ANTHROPIC API ERROR:", data.error);
+       throw new Error(data.error.message || "Model not found");
+    }
 
-    // Bilingual Logic: Check for Anthropic 'content' or OpenAI 'choices'
     const rawText = data.content ? data.content[0].text : 
                     data.choices ? data.choices[0].message.content : 
                     null;
 
     if (!rawText) throw new Error("Unexpected API response format");
 
-    // Extraction Logic: Find the JSON block inside the string
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     
@@ -55,18 +55,18 @@ async function judgePrompt(challenge, userPrompt) {
 
     return {
       total: Number(parsed.total) || 0,
-      grade: parsed.grade || "C",
+      grade: parsed.grade || "Audited",
       scores: {
-        clarity: Number(parsed.scores?.clarity) || 0,
-        specificity: Number(parsed.scores?.specificity) || 0,
-        awareness: Number(parsed.scores?.awareness) || 0,
-        craft: Number(parsed.scores?.craft) || 0
+        clarity: Number(parsed.scores?.clarity || 0),
+        specificity: Number(parsed.scores?.specificity || 0),
+        awareness: Number(parsed.scores?.awareness || 0),
+        craft: Number(parsed.scores?.craft || 0)
       },
       scoreReasons: parsed.scoreReasons || {},
       rewrittenPrompt: parsed.rewrittenPrompt || ""
     };
   } catch (err) {
-    console.error("Scoring Error:", err);
+    console.error("Final Scrutiny Error:", err);
     throw err;
   }
 }
