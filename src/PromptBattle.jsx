@@ -29,7 +29,7 @@ async function callAPI(body) {
 
 async function judgePrompt(challenge, userPrompt) {
   const data = await callAPI({
-    model: "claude-3-5-sonnet-20240620", // Updated model name for stability
+    model: "claude-3-5-sonnet-20240620", 
     max_tokens: 1000,
     system: `You are an extremely strict AI Prompting Auditor. 
       CRITICAL SCORING: Do NOT give high scores for lazy or generic prompts. 
@@ -40,29 +40,10 @@ async function judgePrompt(challenge, userPrompt) {
     messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT:\n${userPrompt}` }]
   });
 
-  try {
-    // Anthropic specific data extraction
-    const rawText = data.content ? data.content[0].text : data.choices[0].message.content;
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    // Ensure numeric values and proper keys for history/UI tracking
-    return {
-      total: Number(parsed.total) || 0,
-      grade: parsed.grade || "C",
-      scores: {
-        clarity: Number(parsed.scores?.clarity) || 0,
-        specificity: Number(parsed.scores?.specificity) || 0,
-        awareness: Number(parsed.scores?.awareness) || 0,
-        craft: Number(parsed.scores?.craft) || 0
-      },
-      scoreReasons: parsed.scoreReasons || {},
-      rewrittenPrompt: parsed.rewrittenPrompt || ""
-    };
-  } catch (err) {
-    console.error("Parse error:", err);
-    throw err;
-  }
+  // CRITICAL FIX: The old code crashed here because it only looked for data.choices (OpenAI).
+  // We now check for data.content (Anthropic) first so your credits aren't wasted.
+  const content = data.content ? data.content[0].text : data.choices[0].message.content;
+  return JSON.parse(content.replace(/```json|```/g, "").trim());
 }
 
 function ScoreBar({ label, value, reason, delay = 0 }) {
@@ -114,11 +95,10 @@ export default function PromptBattle() {
     try {
       const r = await judgePrompt(challenge, userPrompt);
       setResults(r);
-      // History Logic: Keeps the last 5 scores
       setHistory(prev => [...prev, r.total].slice(-5));
       setScreen("results");
-    } catch { 
-      alert("Submission error. Please check your console.");
+    } catch (err) { 
+      console.error(err);
       setScreen("challenge"); 
     }
   };
@@ -137,7 +117,7 @@ export default function PromptBattle() {
         <a href="https://bigspaceai.com"><img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", cursor: "pointer" }} /></a>
       </div>
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
-      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "120px 20px 80px" }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "100px 20px 80px" }}>
         {children}
       </div>
     </div>
@@ -151,10 +131,22 @@ export default function PromptBattle() {
     </div>
   );
 
-  if (screen === "generating" || screen === "judging") return wrap(
+  if (screen === "generating") return wrap(
     <div style={{ textAlign: "center", paddingTop: "60px" }}>
       <div style={{ width: "64px", height: "64px", border: "4px solid #222", borderTopColor: RED, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 32px" }} />
-      <h2 style={{ ...H, fontSize: "32px" }}>{screen === "generating" ? "FETCHING NEW TASK..." : "SCORING YOUR PROMPT..."}</h2>
+      <h2 style={{ ...H, fontSize: "32px" }}>FETCHING NEW TASK...</h2>
+    </div>
+  );
+
+  if (screen === "judging") return wrap(
+    <div style={{ textAlign: "center", paddingTop: "60px" }}>
+      <div style={{ width: "64px", height: "64px", border: "4px solid #222", borderTopColor: RED, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 32px" }} />
+      <h2 style={{ ...H, fontSize: "36px", marginBottom: "16px" }}>SCORING YOUR PROMPT...</h2>
+      <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+        {["CLARITY", "SPECIFICITY", "AWARENESS", "CRAFT"].map((c, i) => (
+          <span key={i} style={{ ...H, fontSize: "15px", color: GREY, animation: `pulse 1.5s ease ${i * 0.3}s infinite` }}>{c} ·</span>
+        ))}
+      </div>
     </div>
   );
 
@@ -167,12 +159,12 @@ export default function PromptBattle() {
           <p style={{ ...B, fontSize: "15px", color: GREY }}>{challenge.hint}</p>
         </div>
       </div>
-      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px", outline: "none" }} />
+      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px" }} />
       <button onClick={submit} disabled={userPrompt.length < 5} style={{ background: userPrompt.length < 5 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "16px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT FOR AUDIT →</button>
     </div>
   );
 
-  if (screen === "results" && results) {
+  if (screen === "results") {
     const passed = results.total >= 80;
     return wrap(
       <div style={{ animation: "fadeUp 0.5s ease" }}>
@@ -181,7 +173,7 @@ export default function PromptBattle() {
           <div style={{ ...H, fontSize: "24px" }}>{results.grade.toUpperCase()}</div>
         </div>
 
-        {/* BATTLE RECORDS / HISTORY SCORE */}
+        {/* LATEST SCORES TRACKER */}
         {history.length > 1 && (
           <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
             <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
@@ -204,16 +196,7 @@ export default function PromptBattle() {
           <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
         </div>
 
-        {results.rewrittenPrompt && (
-          <div style={{ background: "#0f0f0f", padding: "28px", marginBottom: "24px", border: "1px solid #1f1f1f", borderLeft: `4px solid ${RED}` }}>
-            <div style={{ ...H, fontSize: "14px", color: RED, marginBottom: "12px" }}>PRO TIP: REWRITTEN VERSION</div>
-            <p style={{ ...B, fontSize: "15px", color: "#ddd", whiteSpace: "pre-wrap", lineHeight: "1.8" }}>{results.rewrittenPrompt}</p>
-          </div>
-        )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "20px", cursor: "pointer", width: "100%" }}>NEW CHALLENGE</button>
-        </div>
+        <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "20px", cursor: "pointer", width: "100%" }}>REPLAY CHALLENGE</button>
       </div>
     );
   }
