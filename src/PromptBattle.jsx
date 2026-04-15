@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 
-// --- STYLING CONSTANTS ---
 const RED = "#eb1d25";
 const BLACK = "#0a0a0a";
 const WHITE = "#ffffff";
@@ -10,68 +9,56 @@ const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textT
 const B = { fontFamily: "'Barlow', sans-serif" };
 
 const BEGINNER_CHALLENGES = [
-  { id: 1, title: "THE EXPLAINER", scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.", hint: "Think about: who is the audience? What do they already know? What analogies might help?", evaluationFocus: "clarity, audience awareness, use of analogy" },
-  { id: 2, title: "THE PRODUCT PITCH", scenario: "Write a compelling product description for a plain white coffee mug.", hint: "Think about: tone, sensory details, emotional appeal, who buys mugs and why?", evaluationFocus: "creativity, persuasion, specificity" },
-  { id: 3, title: "THE REWRITER", scenario: "Rewrite this boring sentence to make it exciting: 'The meeting is on Tuesday at 3pm.'", hint: "Think about: energy, context, what makes people actually want to show up?", evaluationFocus: "creativity, transformation, voice" },
-  { id: 4, title: "THE POLITE DECLINE", scenario: "Write a polite but firm email to a friend declining an invitation to their weekend party because you need to rest.", hint: "Think about: maintaining the friendship while being clear about your boundaries.", evaluationFocus: "tone, empathy, clarity" },
-  { id: 5, title: "THE RECIPE MAKER", scenario: "Ask an AI to give you a dinner recipe using only eggs, spinach, and a piece of bread.", hint: "Think about: providing clear constraints so the AI doesn't suggest extra ingredients you don't have.", evaluationFocus: "specificity, constraint-setting" },
-  { id: 6, title: "THE TRAVEL GUIDE", scenario: "You have 4 hours in London. Ask the AI for a walking route that sees 3 major landmarks and ends at a great pub.", hint: "Think about: time management, starting location, and specific interests.", evaluationFocus: "logistics, clarity, constraints" },
-  { id: 7, title: "THE INSTA-CAPTION", scenario: "Write a short, witty Instagram caption for a photo of a very messy desk titled 'Productivity'.", hint: "Think about: irony, brevity, and target audience.", evaluationFocus: "tone, humor, impact" }
+  { id: 1, title: "THE EXPLAINER", scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.", hint: "Think about: analogies and audience awareness.", focus: "clarity" },
+  { id: 2, title: "THE PRODUCT PITCH", scenario: "Write a compelling product description for a plain white coffee mug.", hint: "Think about: sensory details and emotional appeal.", focus: "creativity" },
+  { id: 3, title: "THE REWRITER", scenario: "Rewrite this boring sentence to make it exciting: 'The meeting is on Tuesday at 3pm.'", hint: "Think about: energy and context.", focus: "voice" }
 ];
 
-// --- API LOGIC ---
 async function judgePrompt(challenge, userPrompt) {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        // Try this more generic name first
-        model: "claude-3-5-sonnet", 
+        // This matches your 'Claude Sonnet Active' status in the console
+        model: "claude-3-5-sonnet-latest", 
         max_tokens: 1000,
-        system: "You are an extremely strict AI Prompting Auditor. Return ONLY a JSON object. No conversation.",
+        system: "You are a strict Prompt Auditor. Return ONLY a JSON object with keys: total, grade, scores (clarity, specificity, awareness, craft), and scoreReasons.",
         messages: [{ role: "user", content: `CHALLENGE: ${challenge.scenario}\nUSER PROMPT: ${userPrompt}` }]
       })
     });
 
     const data = await response.json();
-    
-    // If the error persists, the console will now show the EXACT message from Anthropic
-    if (data.error) {
-       console.error("ANTHROPIC API ERROR:", data.error);
-       throw new Error(data.error.message || "Model not found");
-    }
+    if (data.error) throw new Error(data.error.message);
 
+    // Extract text from Anthropic or OpenAI format
     const rawText = data.content ? data.content[0].text : 
-                    data.choices ? data.choices[0].message.content : 
-                    null;
+                    data.choices ? data.choices[0].message.content : null;
 
-    if (!rawText) throw new Error("Unexpected API response format");
+    if (!rawText) throw new Error("No response from AI");
 
+    // Extract JSON block even if there is surrounding text
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in response");
-    
+    if (!jsonMatch) throw new Error("Invalid JSON format");
     const parsed = JSON.parse(jsonMatch[0]);
 
     return {
       total: Number(parsed.total) || 0,
-      grade: parsed.grade || "Audited",
+      grade: parsed.grade || "B",
       scores: {
         clarity: Number(parsed.scores?.clarity || 0),
         specificity: Number(parsed.scores?.specificity || 0),
         awareness: Number(parsed.scores?.awareness || 0),
         craft: Number(parsed.scores?.craft || 0)
       },
-      scoreReasons: parsed.scoreReasons || {},
-      rewrittenPrompt: parsed.rewrittenPrompt || ""
+      scoreReasons: parsed.scoreReasons || {}
     };
   } catch (err) {
-    console.error("Final Scrutiny Error:", err);
+    console.error("Audit Error:", err);
     throw err;
   }
 }
 
-// --- UI COMPONENTS ---
 function ScoreBar({ label, value, reason, delay = 0 }) {
   const [width, setWidth] = useState(0);
   const [show, setShow] = useState(false);
@@ -86,35 +73,26 @@ function ScoreBar({ label, value, reason, delay = 0 }) {
         <span style={{ ...H, fontSize: "15px", letterSpacing: "0.06em", color: "#aaa" }}>{label}</span>
         <span style={{ ...H, fontSize: "16px", color: value >= 20 ? RED : WHITE }}>{value}/25</span>
       </div>
-      <div style={{ background: "#1f1f1f", height: "6px", marginBottom: reason ? "10px" : "0" }}>
-        <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s cubic-bezier(0.22, 1, 0.36, 1)" }} />
+      <div style={{ background: "#1f1f1f", height: "6px" }}>
+        <div style={{ width: `${width}%`, height: "100%", background: RED, transition: "width 0.9s ease-out" }} />
       </div>
-      {reason && show && <p style={{ ...B, fontSize: "13px", color: "#888", lineHeight: "1.6", borderLeft: `2px solid #2a2a2a`, paddingLeft: "10px" }}>{reason}</p>}
+      {reason && show && <p style={{ ...B, fontSize: "13px", color: "#888", marginTop: "10px", lineHeight: "1.6" }}>{reason}</p>}
     </div>
   );
 }
 
-// --- MAIN APPLICATION ---
 export default function PromptBattle() {
   const [screen, setScreen] = useState("home");
   const [challenge, setChallenge] = useState(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [results, setResults] = useState(null);
   const [history, setHistory] = useState([]);
-  const [seenIds, setSeenIds] = useState([]);
 
   const startNewBattle = () => {
+    setChallenge(BEGINNER_CHALLENGES[Math.floor(Math.random() * BEGINNER_CHALLENGES.length)]);
     setUserPrompt("");
     setResults(null);
-    setScreen("generating");
-    setTimeout(() => {
-      let available = BEGINNER_CHALLENGES.filter(c => !seenIds.includes(c.id));
-      if (available.length === 0) { available = BEGINNER_CHALLENGES; setSeenIds([]); }
-      const selected = available[Math.floor(Math.random() * available.length)];
-      setChallenge(selected);
-      setSeenIds(prev => [...prev, selected.id]);
-      setScreen("challenge");
-    }, 800);
+    setScreen("challenge");
   };
 
   const submit = async () => {
@@ -126,84 +104,56 @@ export default function PromptBattle() {
       setHistory(prev => [...prev, r.total].slice(-5));
       setScreen("results");
     } catch (err) { 
-      alert("Scoring failed. Please check the console or your API credits.");
+      alert(`Submission error: ${err.message}`);
       setScreen("challenge"); 
     }
   };
 
   const wrap = (children) => (
-    <div style={{ minHeight: "100vh", background: BLACK, color: WHITE, position: "relative" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
+    <div style={{ minHeight: "100vh", background: BLACK, color: WHITE, position: "relative", padding: "120px 20px" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@900&family=Barlow:wght@400;600&display=swap');`}</style>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "6px", background: RED, zIndex: 100 }} />
-      <div style={{ position: "fixed", top: "6px", left: 0, right: 0, height: "60px", background: "#000", borderBottom: "1px solid rgba(255,255,255,0.1)", zIndex: 99, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <a href="https://bigspaceai.com"><img src="/logo.png" alt="BigSpaceAI" style={{ height: "40px", cursor: "pointer" }} /></a>
-      </div>
-      <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto", padding: "120px 20px 80px" }}>
-        {children}
-      </div>
+      <div style={{ maxWidth: "680px", margin: "0 auto" }}>{children}</div>
     </div>
   );
 
   if (screen === "home") return wrap(
-    <div style={{ animation: "fadeUp 0.6s ease" }}>
-      <h1 style={{ ...H, fontSize: "clamp(64px, 14vw, 108px)", lineHeight: "0.95" }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
-      <p style={{ ...B, fontSize: "17px", color: GREY, margin: "24px 0 48px" }}>Test your AI prompting skills. Unique beginner tasks. Get audited. Earn your badge.</p>
-      <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "18px 48px", cursor: "pointer" }}>START BATTLE →</button>
+    <div>
+      <h1 style={{ ...H, fontSize: "80px", lineHeight: "1" }}>PROMPT<br /><span style={{ color: RED }}>BATTLE.</span></h1>
+      <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "18px 40px", marginTop: "40px", cursor: "pointer" }}>START BATTLE</button>
     </div>
   );
 
-  if (screen === "generating" || screen === "judging") return wrap(
+  if (screen === "judging") return wrap(
     <div style={{ textAlign: "center", paddingTop: "60px" }}>
-      <div style={{ width: "64px", height: "64px", border: "4px solid #222", borderTopColor: RED, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 32px" }} />
-      <h2 style={{ ...H, fontSize: "32px" }}>{screen === "generating" ? "FETCHING NEW TASK..." : "SCORING YOUR PROMPT..."}</h2>
+      <h2 style={{ ...H, fontSize: "32px" }}>AUDITING...</h2>
     </div>
   );
 
   if (screen === "challenge") return wrap(
-    <div style={{ animation: "fadeUp 0.5s ease" }}>
-      <div style={{ border: "1px solid #222", borderTop: `3px solid ${RED}`, padding: "28px", marginBottom: "20px" }}>
-        <div style={{ ...H, fontSize: "14px", color: RED, marginBottom: "16px" }}>{challenge.title}</div>
-        <p style={{ ...B, fontSize: "18px", color: WHITE, marginBottom: "24px", lineHeight: "1.6" }}>{challenge.scenario}</p>
-        <div style={{ background: "#111", padding: "16px", borderLeft: `3px solid ${RED}` }}>
-          <p style={{ ...B, fontSize: "15px", color: GREY }}>{challenge.hint}</p>
-        </div>
+    <div>
+      <div style={{ border: "1px solid #222", borderTop: `4px solid ${RED}`, padding: "30px", marginBottom: "30px" }}>
+        <h3 style={{ ...H, color: RED, marginBottom: "10px" }}>{challenge.title}</h3>
+        <p style={{ ...B, fontSize: "18px" }}>{challenge.scenario}</p>
       </div>
-      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Enter your prompt..." style={{ width: "100%", height: "180px", background: "#0f0f0f", border: "1px solid #2a2a2a", color: WHITE, padding: "16px", ...B, fontSize: "16px", outline: "none" }} />
-      <button onClick={submit} disabled={userPrompt.length < 5} style={{ background: userPrompt.length < 5 ? "#222" : RED, border: "none", color: WHITE, ...H, fontSize: "18px", padding: "16px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT FOR AUDIT →</button>
+      <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)} placeholder="Type your prompt..." style={{ width: "100%", height: "200px", background: "#111", border: "1px solid #333", color: WHITE, padding: "20px", fontSize: "16px", outline: "none" }} />
+      <button onClick={submit} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "18px 40px", marginTop: "20px", cursor: "pointer" }}>SUBMIT</button>
     </div>
   );
 
   if (screen === "results" && results) return wrap(
-    <div style={{ animation: "fadeUp 0.5s ease" }}>
-      <div style={{ background: "#0d0d0d", padding: "40px", textAlign: "center", borderTop: `4px solid ${RED}`, marginBottom: "16px" }}>
-        <div style={{ ...H, fontSize: "100px", color: RED, lineHeight: "1" }}>{results.total}</div>
-        <div style={{ ...H, fontSize: "24px" }}>{results.grade.toUpperCase()}</div>
+    <div>
+      <div style={{ textAlign: "center", marginBottom: "40px" }}>
+        <div style={{ ...H, fontSize: "120px", color: RED, lineHeight: "1" }}>{results.total}</div>
+        <div style={{ ...H, fontSize: "24px", color: GREY }}>{results.grade}</div>
       </div>
-
-      {history.length > 1 && (
-        <div style={{ marginBottom: "24px", padding: "16px", background: "#111", border: "1px solid #222" }}>
-          <div style={{ ...H, fontSize: "12px", color: GREY, marginBottom: "12px", textAlign: "center", letterSpacing: "0.1em" }}>BATTLE RECORDS</div>
-          <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-            {history.map((s, i) => (
-              <div key={i} style={{ flex: 1, maxWidth: "60px", background: i === history.length - 1 ? RED : "#222", color: i === history.length - 1 ? WHITE : "#555", padding: "10px 0", textAlign: "center", ...H, fontSize: "20px" }}>{s}</div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{ border: "1px solid #1f1f1f", padding: "28px", marginBottom: "16px" }}>
-        <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons?.clarity} />
-        <ScoreBar label="SPECIFICITY" value={results.scores.specificity} reason={results.scoreReasons?.specificity} delay={150} />
-        <ScoreBar label="AWARENESS" value={results.scores.awareness} reason={results.scoreReasons?.awareness} delay={300} />
-        <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons?.craft} delay={450} />
+      <div style={{ background: "#0d0d0d", padding: "30px", border: "1px solid #1a1a1a" }}>
+        <ScoreBar label="CLARITY" value={results.scores.clarity} reason={results.scoreReasons.clarity} />
+        <ScoreBar label="SPECIFICITY" value={results.scores.specificity} reason={results.scoreReasons.specificity} delay={150} />
+        <ScoreBar label="AWARENESS" value={results.scores.awareness} reason={results.scoreReasons.awareness} delay={300} />
+        <ScoreBar label="CRAFT" value={results.scores.craft} reason={results.scoreReasons.craft} delay={450} />
       </div>
-
-      <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "20px", cursor: "pointer", width: "100%" }}>NEW CHALLENGE</button>
+      <button onClick={startNewBattle} style={{ background: RED, border: "none", color: WHITE, ...H, fontSize: "20px", padding: "20px", width: "100%", marginTop: "30px", cursor: "pointer" }}>NEW CHALLENGE</button>
     </div>
   );
 
