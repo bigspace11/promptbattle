@@ -9,14 +9,6 @@ const H = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, textT
 const B = { fontFamily: "'Barlow', sans-serif" };
 
 const BEGINNER_CHALLENGES = [
-{
-id: 1,
-title: "THE EXPLAINER",
-scenario: "Explain how WiFi works to your 70-year-old grandmother who has never used a smartphone.",
-evaluationFocus: "clarity, audience awareness, use of analogy"
-},
-{
-const BEGINNER_CHALLENGES = [
   {
     id: 1,
     title: "THE CULTURAL GUIDE",
